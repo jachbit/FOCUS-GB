@@ -553,6 +553,24 @@
       <div id="countdown-label">next: —</div>
     </div>
 
+    <!-- Alerts -->
+    <div class="card">
+      <div class="card-label">Alerts</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <span style="font-size:0.82rem;color:var(--muted);">Node warnings</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div id="toggle-alerts" onclick="toggleAlerts()" style="width:40px;height:22px;border-radius:11px;background:var(--green);cursor:pointer;position:relative;transition:background 0.2s;">
+            <div style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left 0.2s;" id="toggle-knob"></div>
+          </div>
+          <span id="toggle-state" style="font-size:0.82rem;color:var(--muted);">ON</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-size:0.75rem;color:var(--muted);">2-min warn + fire beep</span>
+        <button onclick="testBeep()" style="background:none;border:1px solid var(--border);color:var(--muted);font-size:0.72rem;padding:3px 10px;border-radius:4px;cursor:pointer;">TEST</button>
+      </div>
+    </div>
+
   </div>
 
   <!-- NODE GRID -->
@@ -979,6 +997,13 @@
     document.getElementById('countdown-val').textContent   = `${pad2(mm)}:${pad2(ss)}`;
     document.getElementById('countdown-label').textContent = `next node → :${pad2(nxtActual)}`;
 
+    // Node alerts
+    if (alertsOn) {
+      if (nxtActual !== lastAlertNode) { alerted2min = false; alertedFire = false; lastAlertNode = nxtActual; }
+      if (secsLeft <= 120 && secsLeft > 30 && !alerted2min) { beepWarn(); alerted2min = true; }
+      if (secsLeft <= 5   && !alertedFire)                  { beepFire(); alertedFire = true; }
+    }
+
     // Path node highlighting (highlight nodes whose minute matches current)
     ['path-a', 'path-b'].forEach(pathId => {
       const nodes = pathId === 'path-a' ? PATH_A : PATH_B;
@@ -1001,6 +1026,51 @@
         el.className = 'kz-item';
       }
     });
+  }
+
+  // ── ALERTS ────────────────────────────────────────────────────────────────
+  let alertsOn      = true;
+  let alerted2min   = false;
+  let alertedFire   = false;
+  let lastAlertNode = -1;
+  let audioCtx      = null;
+
+  function getAudioCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return audioCtx;
+  }
+  function beep(freq=880, dur=0.18, vol=0.4, type='sine') {
+    try {
+      const ctx = getAudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(vol, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur + 0.05);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + dur + 0.05);
+    } catch(e) {}
+  }
+  function beepWarn() {
+    beep(660, 0.14, 0.3, 'sine');
+    setTimeout(() => beep(660, 0.14, 0.3, 'sine'), 200);
+  }
+  function beepFire() {
+    beep(880, 0.18, 0.5, 'sine');
+    setTimeout(() => beep(1100, 0.22, 0.5, 'sine'), 220);
+    setTimeout(() => beep(1320, 0.28, 0.5, 'sine'), 460);
+  }
+  function testBeep() { beepWarn(); setTimeout(beepFire, 600); }
+  function toggleAlerts() {
+    alertsOn = !alertsOn;
+    const knob = document.getElementById('toggle-knob');
+    const wrap = document.getElementById('toggle-alerts');
+    const state = document.getElementById('toggle-state');
+    wrap.style.background  = alertsOn ? 'var(--green)' : '#444';
+    knob.style.left        = alertsOn ? '3px' : '21px';
+    state.textContent      = alertsOn ? 'ON' : 'OFF';
   }
 
   // ── INIT ──────────────────────────────────────────────────────────────────
