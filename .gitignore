@@ -1,0 +1,33 @@
+# ── Secrets — NEVER commit ────────────────────────────────────────
+.env
+tastytrade_token.json
+schwab_token.json
+
+# ── Personal PRO chart ────────────────────────────────────────────
+index_pro.html
+app.py
+start_pro.bat
+start.bat
+check_tt_session.bat
+check_tt_session.py
+renew_tastytrade_token.bat
+renew_tastytrade_token.py
+generate_gb_algo_guide.py
+.env.template
+
+# ── Backups / timestamped copies ──────────────────────────────────
+_backups/
+*_backup_*.html
+*_20[0-9][0-9][0-9][0-9][0-9][0-9]_*.html
+index_20*.html
+gb_algo_guide_20*.html
+
+# ── PDFs ──────────────────────────────────────────────────────────
+*.pdf
+
+# ── IDE / system ──────────────────────────────────────────────────
+.claude/
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

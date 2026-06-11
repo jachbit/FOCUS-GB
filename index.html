@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>F.O.C.U.S.STOCKS — GB ALGO</title>
+  <style>
+    :root {
+      --navy:    rgb(0, 43, 92);
+      --navy2:   rgb(0, 28, 60);
+      --orange:  rgb(230, 92, 0);
+      --grey:    rgb(68, 68, 68);
+      --blue:    #3b82f6;
+      --green:   #22c55e;
+      --red:     #ef4444;
+      --yellow:  #facc15;
+      --bg:      #0a0f1e;
+      --card:    #0f172a;
+      --border:  rgba(0,43,92,0.6);
+      --text:    #e2e8f0;
+      --muted:   #c8d3e0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: linear-gradient(90deg, var(--navy2) 0%, var(--navy) 100%);
+      border-bottom: 3px solid var(--orange);
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand {
+      display: flex;
+      flex-direction: column;
+    }
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: #fff;
+    }
+    .brand-sub {
+      font-size: 0.72rem;
+      color: var(--orange);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+    .header-right {
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-align: right;
+    }
+    .header-right span {
+      color: var(--orange);
+      font-weight: 600;
+    }
+
+    /* ── MAIN GRID ── */
+    main {
+      flex: 1;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    /* ── CLOCK ROW ── */
+    .clock-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px 22px;
+    }
+
+    .card-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    /* Zurich clock */
+    #zurich-time {
+      font-size: 3.2rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: #fff;
+      line-height: 1;
+    }
+    #zurich-date, #ny-date {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+    #ny-time {
+      font-size: 3.2rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: #fff;
+      line-height: 1;
+    }
+    .tz-badge {
+      display: inline-block;
+      background: var(--navy);
+      color: var(--orange);
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      padding: 2px 7px;
+      border-radius: 4px;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    /* Node status */
+    #node-status-val {
+      font-size: 1.9rem;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+    #node-status-desc {
+      font-size: 0.8rem;
+      margin-top: 6px;
+    }
+    .status-at    { color: var(--red); }
+    .status-near  { color: var(--orange); }
+    .status-clear { color: var(--green); }
+
+    /* Countdown */
+    #countdown-val {
+      font-size: 3rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: var(--blue);
+      line-height: 1;
+    }
+    #countdown-label {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    /* ── NODE GRID ── */
+    .node-grid-wrap {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 22px;
+    }
+    .node-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .node-chip {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: rgba(0,43,92,0.35);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 8px 14px;
+      min-width: 70px;
+      transition: all 0.3s;
+    }
+    .node-chip .node-min {
+      font-size: 1.25rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: #cbd5e1;
+    }
+    .node-chip .node-ce {
+      font-size: 0.65rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .node-chip.active {
+      background: rgba(230,92,0,0.18);
+      border-color: var(--orange);
+    }
+    .node-chip.active .node-min { color: var(--orange); }
+    .node-chip.near {
+      background: rgba(230,92,0,0.08);
+      border-color: rgba(230,92,0,0.45);
+    }
+    .node-chip.near .node-min { color: #fbbf24; }
+    .node-chip.past {
+      opacity: 0.4;
+    }
+    .node-chip .node-label {
+      font-size: 0.58rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-top: 3px;
+    }
+    .node-chip.active .node-label { color: var(--orange); }
+
+    /* ── PATHS ROW ── */
+    .paths-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .path-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px 22px;
+    }
+    .path-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .path-badge {
+      background: var(--navy);
+      border: 1px solid var(--orange);
+      color: var(--orange);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      padding: 3px 10px;
+      border-radius: 4px;
+    }
+    .path-title {
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .path-sequence {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+    .path-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: rgba(0,43,92,0.4);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 12px;
+      min-width: 60px;
+      transition: all 0.3s;
+    }
+    .path-node .pn-time {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #94a3b8;
+    }
+    .path-node .pn-ce {
+      font-size: 0.62rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .path-node.pn-active {
+      background: rgba(230,92,0,0.2);
+      border-color: var(--orange);
+    }
+    .path-node.pn-active .pn-time { color: var(--orange); }
+    .path-node.pn-converge {
+      background: rgba(59,130,246,0.18);
+      border-color: var(--blue);
+    }
+    .path-node.pn-converge .pn-time { color: var(--blue); }
+
+    .path-arrow {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    /* ── BOTTOM ROW ── */
+    .bottom-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    /* CE Reference */
+    .ce-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .ce-chip {
+      background: rgba(59,130,246,0.12);
+      border: 1px solid rgba(59,130,246,0.3);
+      border-radius: 6px;
+      padding: 8px;
+      text-align: center;
+    }
+    .ce-chip .ce-val {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--blue);
+    }
+    .ce-chip .ce-lbl {
+      font-size: 0.6rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* Kill Zones */
+    .kz-list {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .kz-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      background: rgba(0,43,92,0.3);
+      border: 1px solid var(--border);
+    }
+    .kz-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .kz-item .kz-name {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      flex: 1;
+    }
+    .kz-item .kz-time {
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .kz-item.kz-active {
+      background: rgba(34,197,94,0.1);
+      border-color: rgba(34,197,94,0.35);
+    }
+    .kz-item.kz-active .kz-name { color: var(--green); }
+
+    /* ── LEGEND ── */
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      padding: 10px 0 2px;
+    }
+    .leg-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.68rem;
+      color: var(--muted);
+    }
+    .leg-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+    }
+
+    /* ── TRADE LOG ── */
+    .tradelog-wrap {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px 22px;
+    }
+    .tradelog-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+      align-items: flex-end;
+    }
+    .tradelog-controls select,
+    .tradelog-controls input {
+      background: rgba(0,43,92,0.5);
+      border: 1px solid rgba(0,43,92,0.9);
+      border-radius: 5px;
+      color: #fff;
+      font-size: 0.8rem;
+      padding: 6px 10px;
+      outline: none;
+    }
+    .tradelog-controls select:focus,
+    .tradelog-controls input:focus {
+      border-color: var(--orange);
+    }
+    .tradelog-controls label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 0.65rem;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .btn-log {
+      background: var(--orange);
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 8px 20px;
+      cursor: pointer;
+      letter-spacing: 0.08em;
+      transition: background 0.2s;
+      align-self: flex-end;
+    }
+    .btn-log:hover { background: rgb(200,75,0); }
+    .btn-clear {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      font-size: 0.75rem;
+      padding: 7px 14px;
+      cursor: pointer;
+      align-self: flex-end;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .btn-clear:hover { border-color: var(--red); color: var(--red); }
+    .log-table-wrap {
+      margin-top: 14px;
+      overflow-x: auto;
+    }
+    .log-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.75rem;
+    }
+    .log-table th {
+      text-align: left;
+      padding: 6px 10px;
+      background: rgba(0,43,92,0.5);
+      color: var(--orange);
+      font-size: 0.62rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+    .log-table td {
+      padding: 7px 10px;
+      border-bottom: 1px solid rgba(0,43,92,0.3);
+      color: #fff;
+    }
+    .log-table tr:last-child td { border-bottom: none; }
+    .log-table tr:hover td { background: rgba(0,43,92,0.25); }
+    .log-empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 18px;
+      font-size: 0.78rem;
+    }
+    .badge-path-a { color: var(--green);  font-weight: 700; }
+    .badge-path-b { color: var(--yellow); font-weight: 700; }
+    .badge-high   { color: var(--red);    font-weight: 700; }
+    .badge-low    { color: var(--blue);   font-weight: 700; }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--navy2);
+      border-top: 1px solid var(--border);
+      padding: 8px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.65rem;
+      color: var(--yellow);
+    }
+    footer span { color: #fff; font-weight: 600; }
+
+    /* ── PULSE ANIMATION ── */
+    @keyframes pulse-border {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(230,92,0,0.5); }
+      50%       { box-shadow: 0 0 0 6px rgba(230,92,0,0); }
+    }
+    .node-chip.active { animation: pulse-border 1.5s infinite; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="brand">
+    <div class="brand-title">F.O.C.U.S.STOCKS</div>
+    <div class="brand-sub">GB Algo — Goldbach Time &amp; Algo Path</div>
+  </div>
+  <div class="header-right">
+    Futures Edition &nbsp;|&nbsp; <span>Jachbit 2026</span><br>
+    Based on Hopiplaka Goldbach Framework
+  </div>
+</header>
+
+<main>
+
+  <!-- CLOCK ROW -->
+  <div class="clock-row">
+
+    <!-- Zurich Clock -->
+    <div class="card">
+      <div class="card-label">Zurich Time <span class="tz-badge">UTC+2 CEST</span></div>
+      <div id="zurich-time">00:00:00</div>
+      <div id="zurich-date">—</div>
+    </div>
+
+    <!-- NY Clock -->
+    <div class="card">
+      <div class="card-label">New York Time <span class="tz-badge" style="color:var(--yellow);border-color:var(--yellow);">ET / EDT</span></div>
+      <div id="ny-time">00:00:00</div>
+      <div id="ny-date">—</div>
+    </div>
+
+    <!-- Node Status -->
+    <div class="card">
+      <div class="card-label">Current Node Status</div>
+      <div id="node-status-val" class="status-clear">—</div>
+      <div id="node-status-desc" class="status-clear">Waiting...</div>
+    </div>
+
+    <!-- Countdown -->
+    <div class="card">
+      <div class="card-label">Next Node In</div>
+      <div id="countdown-val">—:——</div>
+      <div id="countdown-label">next: —</div>
+    </div>
+
+  </div>
+
+  <!-- NODE GRID -->
+  <div class="node-grid-wrap">
+    <div class="card-label">Goldbach Algo Nodes — All Minutes (Zurich Hour)</div>
+    <div class="node-grid" id="node-grid"></div>
+    <div class="legend-row">
+      <div class="leg-item"><div class="leg-dot" style="background:var(--orange);"></div> Active Node (± 0 min)</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#fbbf24;"></div> Approaching (≤ 2 min)</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--muted);opacity:0.4;"></div> Past Node</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--blue);"></div> CE Level = 50% midpoint between nodes</div>
+    </div>
+  </div>
+
+  <!-- PATHS ROW -->
+  <div class="paths-row">
+
+    <!-- PATH A -->
+    <div class="path-card">
+      <div class="path-header">
+        <div class="path-badge">PATH A</div>
+        <div class="path-title">Bullish / Up Structure</div>
+      </div>
+      <div class="path-sequence" id="path-a"></div>
+      <div style="margin-top:12px; font-size:0.68rem; color:var(--muted); line-height:1.6;">
+        Structure: Open sweep → build → pullback → continuation → terminus at <span style="color:var(--blue);">xx:29</span><br>
+        Trade the <strong style="color:var(--text);">start (xx:00)</strong> and the <strong style="color:var(--text);">end (xx:29)</strong> — highest probability zones.
+      </div>
+    </div>
+
+    <!-- PATH B -->
+    <div class="path-card">
+      <div class="path-header">
+        <div class="path-badge">PATH B</div>
+        <div class="path-title">Bearish / Down Structure</div>
+      </div>
+      <div class="path-sequence" id="path-b"></div>
+      <div style="margin-top:12px; font-size:0.68rem; color:var(--muted); line-height:1.6;">
+        Structure: Manipulation → distribution → reversal → terminus at <span style="color:var(--blue);">xx:29</span><br>
+        Both paths <strong style="color:var(--blue);">converge at xx:29</strong> — watch for the biggest move here.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TRADE LOG -->
+  <div class="tradelog-wrap">
+    <div class="card-label">Trade Log — Manual Swing Tracker</div>
+    <div class="tradelog-controls">
+      <label>Node (Zurich Min)
+        <select id="log-node">
+          <option value=":00">:00</option>
+          <option value=":03">:03</option>
+          <option value=":11">:11</option>
+          <option value=":17">:17</option>
+          <option value=":29">:29</option>
+          <option value=":41">:41</option>
+          <option value=":47">:47</option>
+          <option value=":53">:53</option>
+          <option value=":59">:59</option>
+        </select>
+      </label>
+      <label>Swing Type
+        <select id="log-type">
+          <option value="High">Swing High</option>
+          <option value="Low">Swing Low</option>
+        </select>
+      </label>
+      <label>Path
+        <select id="log-path">
+          <option value="A">Path A (Bullish)</option>
+          <option value="B">Path B (Bearish)</option>
+          <option value="?">Unknown</option>
+        </select>
+      </label>
+      <label>Instrument
+        <select id="log-instrument">
+          <option value="ES">ES</option>
+          <option value="NQ">NQ</option>
+          <option value="MES">MES</option>
+          <option value="MNQ">MNQ</option>
+        </select>
+      </label>
+      <label>Notes (optional)
+        <input type="text" id="log-notes" placeholder="e.g. Kill zone, GEX level hit" style="width:200px;" />
+      </label>
+      <button class="btn-log" onclick="logSwing()">LOG SWING</button>
+      <button class="btn-clear" onclick="clearLog()">Clear Log</button>
+    </div>
+    <div class="log-table-wrap">
+      <table class="log-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Zurich Time</th>
+            <th>NY Time</th>
+            <th>Node</th>
+            <th>Type</th>
+            <th>Path</th>
+            <th>Instrument</th>
+            <th>Next Target</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody id="log-body">
+          <tr><td colspan="9" class="log-empty">No swings logged yet. Mark a confirmed swing above.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- BOTTOM ROW -->
+  <div class="bottom-row">
+
+    <!-- CE Levels -->
+    <div class="card">
+      <div class="card-label">CE Levels — Consequent Encroachment (50% Midpoints)</div>
+      <div class="ce-grid" id="ce-grid"></div>
+      <div style="margin-top:10px; font-size:0.67rem; color:var(--muted);">
+        CE = midpoint between two consecutive Goldbach nodes. Use as entry refinement or intra-leg target.
+        Note: xx:65 = 5 min into next hour.
+      </div>
+    </div>
+
+    <!-- Kill Zones -->
+    <div class="card">
+      <div class="card-label">CME Futures Kill Zones — Zurich / NY</div>
+      <div class="kz-list" id="kz-list"></div>
+      <div style="margin-top:10px; font-size:0.67rem; color:var(--muted);">
+        Highest confluence = Goldbach node fires <strong style="color:var(--text);">inside</strong> a kill zone window.
+        <span style="color:var(--orange);">Zurich</span> · <span style="color:var(--yellow);">NY</span> times shown side by side.
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+<footer>
+  <div>F.O.C.U.S.STOCKS &nbsp;·&nbsp; GB Algo &nbsp;·&nbsp; Goldbach Time Framework</div>
+  <div><span>Jachbit 2026</span> &nbsp;·&nbsp; For informational use only — not financial advice</div>
+</footer>
+
+<script>
+  // ── DATA ──────────────────────────────────────────────────────────────────
+  const GB_NODES = [0, 3, 11, 17, 29, 41, 47, 53, 59]; // Goldbach algo minutes
+
+  // CE = midpoint between consecutive nodes (wraps: 59→71 means next hour +11)
+  const CE_LEVELS = [
+    { val: 7,  between: '03 → 11' },
+    { val: 14, between: '11 → 17' },
+    { val: 23, between: '17 → 29' },
+    { val: 35, between: '29 → 41' },
+    { val: 44, between: '41 → 47' },
+    { val: 50, between: '47 → 53' },
+    { val: 56, between: '53 → 59' },
+    { val: 65, between: '59 → 71*' },
+  ];
+
+  // CE map: node minute → its CE level minute
+  const NODE_CE = { 3: 7, 11: 14, 17: 23, 29: 35, 41: 44, 47: 50, 53: 56, 59: 65 };
+
+  // Path A: 00 → 11(14) → 41(44) → 03(7) → 17(23) → 29(35)
+  const PATH_A = [
+    { min: 0,  ce: null, converge: false },
+    { min: 11, ce: 14,   converge: false },
+    { min: 41, ce: 44,   converge: false },
+    { min: 3,  ce: 7,    converge: false },
+    { min: 17, ce: 23,   converge: false },
+    { min: 29, ce: 35,   converge: true  },
+  ];
+
+  // Path B: 03(7) → 59(65) → 17(23) → 11(14) → 47(50)/53(56) → 29(35)
+  const PATH_B = [
+    { min: 3,  ce: 7,       converge: false, label: null },
+    { min: 59, ce: 65,      converge: false, label: null },
+    { min: 17, ce: 23,      converge: false, label: null },
+    { min: 11, ce: 14,      converge: false, label: null },
+    { min: 47, ce: '50/56', converge: false, label: '47/53' },
+    { min: 29, ce: 35,      converge: true,  label: null },
+  ];
+
+  // CME Kill Zones — Zurich CEST (UTC+2) + NY EDT (UTC-4)
+  const KILL_ZONES = [
+    { name: 'Asian Range Close',   start: '07:00', end: '08:00', ny: '01:00–02:00 NY', color: '#a855f7' },
+    { name: 'London Open',         start: '08:00', end: '11:00', ny: '02:00–05:00 NY', color: '#3b82f6' },
+    { name: 'NY Open (Prime)',      start: '14:30', end: '16:00', ny: '08:30–10:00 NY', color: '#ef4444' },
+    { name: 'NY Lunch / Reversal', start: '17:00', end: '19:00', ny: '11:00–13:00 NY', color: '#f97316' },
+    { name: 'NY Close',            start: '20:00', end: '21:00', ny: '14:00–15:00 NY', color: '#22c55e' },
+  ];
+
+  // ── HELPERS ───────────────────────────────────────────────────────────────
+  function tzNow(tz) {
+    const now = new Date();
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: tz,
+      hour:   '2-digit', minute: '2-digit', second: '2-digit',
+      day:    '2-digit', month: 'short',    year:   'numeric',
+      hour12: false
+    }).formatToParts(now);
+    const get = t => parts.find(p => p.type === t)?.value ?? '00';
+    return {
+      h: parseInt(get('hour')),
+      m: parseInt(get('minute')),
+      s: parseInt(get('second')),
+      timeStr: `${get('hour')}:${get('minute')}:${get('second')}`,
+      dateStr: `${get('day')} ${get('month')} ${get('year')}`
+    };
+  }
+  function zurichNow() { return tzNow('Europe/Zurich'); }
+  function nyNow()     { return tzNow('America/New_York'); }
+
+  function pad2(n) { return String(n).padStart(2, '0'); }
+
+  function nextNode(currentMin) {
+    // Find the next node minute >= currentMin (in same hour), else wrap to first next hour
+    for (const n of GB_NODES) {
+      if (n > currentMin) return n;
+    }
+    return GB_NODES[0] + 60; // next hour's first node
+  }
+
+  function prevNodes(currentMin) {
+    return GB_NODES.filter(n => n < currentMin);
+  }
+
+  function isInKillZone(h, m, kz) {
+    const cur  = h * 60 + m;
+    const [sh, sm] = kz.start.split(':').map(Number);
+    const [eh, em] = kz.end.split(':').map(Number);
+    return cur >= sh * 60 + sm && cur < eh * 60 + em;
+  }
+
+  // ── BUILD STATIC DOM ──────────────────────────────────────────────────────
+  function buildNodeGrid() {
+    const grid = document.getElementById('node-grid');
+    GB_NODES.forEach(n => {
+      const ce = NODE_CE[n] ?? null;
+      const chip = document.createElement('div');
+      chip.className = 'node-chip';
+      chip.id = `chip-${n}`;
+      chip.innerHTML = `
+        <div class="node-min">:${pad2(n)}</div>
+        ${ce ? `<div class="node-ce">CE :${pad2(ce)}</div>` : '<div class="node-ce">—</div>'}
+        <div class="node-label" id="chip-lbl-${n}"></div>
+      `;
+      grid.appendChild(chip);
+    });
+  }
+
+  function buildPaths() {
+    function renderPath(containerId, nodes) {
+      const el = document.getElementById(containerId);
+      nodes.forEach((node, i) => {
+        const div = document.createElement('div');
+        div.className = 'path-node' + (node.converge ? ' pn-converge' : '');
+        div.id = `${containerId}-node-${i}`;
+        const ceStr = node.ce !== null ? `CE :${typeof node.ce === 'string' ? node.ce : pad2(node.ce)}` : '';
+        const timeStr = node.label ? node.label : `:${pad2(node.min)}`;
+        div.innerHTML = `
+          <div class="pn-time">${timeStr}</div>
+          ${ceStr ? `<div class="pn-ce">${ceStr}</div>` : ''}
+        `;
+        el.appendChild(div);
+        if (i < nodes.length - 1) {
+          const arrow = document.createElement('div');
+          arrow.className = 'path-arrow';
+          arrow.textContent = '→';
+          el.appendChild(arrow);
+        }
+      });
+    }
+    renderPath('path-a', PATH_A);
+    renderPath('path-b', PATH_B);
+  }
+
+  function buildCEGrid() {
+    const grid = document.getElementById('ce-grid');
+    CE_LEVELS.forEach(ce => {
+      const chip = document.createElement('div');
+      chip.className = 'ce-chip';
+      chip.innerHTML = `
+        <div class="ce-val">:${pad2(ce.val)}</div>
+        <div class="ce-lbl">${ce.between}</div>
+      `;
+      grid.appendChild(chip);
+    });
+  }
+
+  function buildKillZones() {
+    const list = document.getElementById('kz-list');
+    KILL_ZONES.forEach((kz, i) => {
+      const item = document.createElement('div');
+      item.className = 'kz-item';
+      item.id = `kz-${i}`;
+      item.innerHTML = `
+        <div class="kz-dot" style="background:${kz.color};"></div>
+        <div class="kz-name">${kz.name}</div>
+        <div class="kz-time"><span style="color:var(--orange);">${kz.start}–${kz.end}</span> &nbsp;<span style="color:var(--yellow);">${kz.ny}</span></div>
+      `;
+      list.appendChild(item);
+    });
+  }
+
+  // ── TRADE LOG ─────────────────────────────────────────────────────────────
+  const PATH_A_SEQ = [0, 11, 41, 3, 17, 29];
+  const PATH_B_SEQ = [3, 59, 17, 11, 47, 29];
+
+  function nextTarget(path, node) {
+    const seq = path === 'A' ? PATH_A_SEQ : PATH_B_SEQ;
+    const nodeMin = parseInt(node.replace(':', ''));
+    const idx = seq.indexOf(nodeMin);
+    if (idx === -1 || idx >= seq.length - 1) return '—';
+    return `:${pad2(seq[idx + 1])}`;
+  }
+
+  let logEntries = [];
+  let logCounter = 0;
+
+  function logSwing() {
+    const z = zurichNow();
+    const ny = nyNow();
+    const node       = document.getElementById('log-node').value;
+    const type       = document.getElementById('log-type').value;
+    const path       = document.getElementById('log-path').value;
+    const instrument = document.getElementById('log-instrument').value;
+    const notes      = document.getElementById('log-notes').value.trim();
+    logCounter++;
+    logEntries.unshift({ id: logCounter, zTime: z.timeStr, nyTime: ny.timeStr, node, type, path, instrument, notes, next: nextTarget(path, node) });
+    document.getElementById('log-notes').value = '';
+    renderLog();
+  }
+
+  function clearLog() {
+    if (!logEntries.length) return;
+    logEntries = [];
+    logCounter = 0;
+    renderLog();
+  }
+
+  function renderLog() {
+    const tbody = document.getElementById('log-body');
+    if (!logEntries.length) {
+      tbody.innerHTML = '<tr><td colspan="9" class="log-empty">No swings logged yet. Mark a confirmed swing above.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = logEntries.map(e => `
+      <tr>
+        <td style="color:var(--muted);">${e.id}</td>
+        <td style="color:var(--orange); font-variant-numeric:tabular-nums;">${e.zTime}</td>
+        <td style="color:var(--yellow); font-variant-numeric:tabular-nums;">${e.nyTime}</td>
+        <td style="font-weight:700;">${e.node}</td>
+        <td class="${e.type === 'High' ? 'badge-high' : 'badge-low'}">${e.type}</td>
+        <td class="${e.path === 'A' ? 'badge-path-a' : e.path === 'B' ? 'badge-path-b' : ''}">${e.path === 'A' ? 'Path A' : e.path === 'B' ? 'Path B' : '?'}</td>
+        <td>${e.instrument}</td>
+        <td style="color:var(--blue); font-weight:700;">${e.next}</td>
+        <td style="color:var(--muted);">${e.notes || '—'}</td>
+      </tr>
+    `).join('');
+  }
+
+  // ── UPDATE LOOP ───────────────────────────────────────────────────────────
+  function update() {
+    const z = zurichNow();
+    const ny = nyNow();
+
+    // Clocks
+    document.getElementById('zurich-time').textContent = z.timeStr;
+    document.getElementById('zurich-date').textContent  = z.dateStr + ' · Zurich';
+    document.getElementById('ny-time').textContent = ny.timeStr;
+    document.getElementById('ny-date').textContent  = ny.dateStr + ' · New York';
+
+    const curMin = z.m;
+
+    // Node chip states
+    GB_NODES.forEach(n => {
+      const chip = document.getElementById(`chip-${n}`);
+      const lbl  = document.getElementById(`chip-lbl-${n}`);
+      const diff = n - curMin;
+      chip.className = 'node-chip';
+      lbl.textContent = '';
+      if (diff === 0) {
+        chip.classList.add('active');
+        lbl.textContent = 'NOW';
+      } else if (diff > 0 && diff <= 2) {
+        chip.classList.add('near');
+        lbl.textContent = `${diff}m`;
+      } else if (diff < 0) {
+        chip.classList.add('past');
+      }
+    });
+
+    // Node status
+    const statusVal  = document.getElementById('node-status-val');
+    const statusDesc = document.getElementById('node-status-desc');
+    if (GB_NODES.includes(curMin)) {
+      statusVal.className  = 'status-at';
+      statusVal.textContent = `AT :${pad2(curMin)}`;
+      statusDesc.className  = 'status-at';
+      statusDesc.textContent = 'Node active — watch for swing!';
+    } else {
+      const diff2 = GB_NODES.find(n => n > curMin && n - curMin <= 2);
+      if (diff2 !== undefined) {
+        statusVal.className   = 'status-near';
+        statusVal.textContent  = `APPROACHING :${pad2(diff2)}`;
+        statusDesc.className  = 'status-near';
+        statusDesc.textContent = `${diff2 - curMin} min to next node`;
+      } else {
+        const nxt = nextNode(curMin);
+        statusVal.className   = 'status-clear';
+        statusVal.textContent  = `BETWEEN NODES`;
+        statusDesc.className  = 'status-clear';
+        statusDesc.textContent = `Next → :${pad2(nxt % 60)}`;
+      }
+    }
+
+    // Countdown
+    const nxt = nextNode(curMin);
+    const nxtActual = nxt % 60;
+    const minsLeft = nxt - curMin;
+    const secsLeft = minsLeft * 60 - z.s;
+    const mm = Math.floor(secsLeft / 60);
+    const ss = secsLeft % 60;
+    document.getElementById('countdown-val').textContent   = `${pad2(mm)}:${pad2(ss)}`;
+    document.getElementById('countdown-label').textContent = `next node → :${pad2(nxtActual)}`;
+
+    // Path node highlighting (highlight nodes whose minute matches current)
+    ['path-a', 'path-b'].forEach(pathId => {
+      const nodes = pathId === 'path-a' ? PATH_A : PATH_B;
+      nodes.forEach((node, i) => {
+        const el = document.getElementById(`${pathId}-node-${i}`);
+        if (!el) return;
+        el.className = 'path-node' + (node.converge ? ' pn-converge' : '');
+        if (node.min === curMin && !node.converge) {
+          el.classList.add('pn-active');
+        }
+      });
+    });
+
+    // Kill zones
+    KILL_ZONES.forEach((kz, i) => {
+      const el = document.getElementById(`kz-${i}`);
+      if (isInKillZone(z.h, z.m, kz)) {
+        el.className = 'kz-item kz-active';
+      } else {
+        el.className = 'kz-item';
+      }
+    });
+  }
+
+  // ── INIT ──────────────────────────────────────────────────────────────────
+  buildNodeGrid();
+  buildPaths();
+  buildCEGrid();
+  buildKillZones();
+  update();
+  setInterval(update, 1000);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>F.O.C.U.S.STOCKS — GB Algo Visual Guide</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #0a0f1e;
+  color: #e2e8f0;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+header {
+  background: linear-gradient(90deg,rgb(0,28,60),rgb(0,43,92));
+  border-bottom: 3px solid rgb(230,92,0);
+  padding: 16px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.brand-title { font-size: 1.5rem; font-weight: 700; letter-spacing: .12em; color: #fff; }
+.brand-sub   { font-size: 1rem; color: rgb(230,92,0); letter-spacing: .18em; text-transform: uppercase; margin-top: 3px; }
+.hdr-right   { font-size: .95rem; color: #c8d3e0; text-align: right; line-height: 1.6; }
+.hdr-right span { color: rgb(230,92,0); font-weight: 600; }
+
+main { flex: 1; padding: 20px 24px; }
+
+.tabs { display: flex; gap: 8px; margin-bottom: 20px; justify-content: center; }
+.tab {
+  padding: 10px 24px; border-radius: 6px;
+  border: 1px solid rgba(0,43,92,.8);
+  background: rgba(0,43,92,.3);
+  color: #c8d3e0; font-size: 1rem; font-weight: 600; cursor: pointer;
+  transition: all .2s;
+}
+.tab.active  { background: rgb(230,92,0); border-color: rgb(230,92,0); color: #fff; }
+.tab:hover:not(.active) { border-color: rgb(230,92,0); color: #fff; }
+
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* CHART PANEL */
+.card {
+  background: #0f172a;
+  border: 1px solid rgba(0,43,92,.6);
+  border-radius: 8px;
+  padding: 20px;
+}
+.card-title { font-size: 1rem; letter-spacing: .15em; text-transform: uppercase; color: #c8d3e0; margin-bottom: 6px; }
+.hint { font-size: .9rem; color: #3b82f6; margin-bottom: 12px; }
+#mainCanvas { width: 100%; cursor: crosshair; display: block; border-radius: 4px; }
+.ctrl-row { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
+.btn {
+  padding: 7px 18px; border-radius: 5px;
+  border: 1px solid rgba(0,43,92,.8);
+  background: rgba(0,43,92,.4); color: #c8d3e0;
+  font-size: .9rem; cursor: pointer; transition: all .15s;
+}
+.btn:hover { border-color: rgb(230,92,0); color: #fff; }
+.legend { display: flex; gap: 18px; margin-top: 12px; flex-wrap: wrap; justify-content: center; }
+.leg { display: flex; align-items: center; gap: 7px; font-size: .95rem; color: #c8d3e0; }
+.ldot { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+
+/* SCENARIOS */
+.sc-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+@media(max-width:800px){ .sc-grid { grid-template-columns: 1fr; } }
+.sc-card { border-radius: 8px; border: 2px solid; padding: 16px; }
+.sc-card.rev  { border-color: #ef4444; background: rgba(239,68,68,.07); }
+.sc-card.pau  { border-color: #facc15; background: rgba(250,204,21,.07); }
+.sc-card.con  { border-color: #22c55e; background: rgba(34,197,94,.07); }
+.sc-lbl { font-size: .85rem; letter-spacing: .18em; text-transform: uppercase; font-weight: 700; margin-bottom: 6px; }
+.rev .sc-lbl { color: #ef4444; }
+.pau .sc-lbl { color: #facc15; }
+.con .sc-lbl { color: #22c55e; }
+.sc-title { font-size: 1.25rem; font-weight: 700; color: #fff; margin-bottom: 10px; }
+.sc-canvas { width: 100%; display: block; border-radius: 4px; }
+.sc-rules { margin-top: 10px; }
+.sc-rule { font-size: .9rem; color: #c8d3e0; margin-bottom: 7px; display: flex; gap: 8px; line-height: 1.5; }
+.sc-rule::before { content: '→'; flex-shrink: 0; font-weight: 700; }
+.rev .sc-rule::before { color: #ef4444; }
+.pau .sc-rule::before { color: #facc15; }
+.con .sc-rule::before { color: #22c55e; }
+.sc-note {
+  margin-top: 14px; font-size: .95rem; color: #c8d3e0;
+  background: rgba(0,43,92,.3); border: 1px solid rgba(59,130,246,.3);
+  border-radius: 6px; padding: 12px 16px; text-align: center; line-height: 1.6;
+}
+.sc-note strong { color: #fff; }
+
+/* PATHS */
+.path-section { display: flex; flex-direction: column; gap: 16px; }
+.path-row {
+  background: rgba(0,43,92,.25); border: 1px solid rgba(0,43,92,.6);
+  border-radius: 8px; padding: 18px 22px;
+}
+.path-lbl { font-size: .95rem; letter-spacing: .15em; text-transform: uppercase; font-weight: 700; margin-bottom: 14px; }
+.pa-lbl { color: #22c55e; }
+.pb-lbl { color: #facc15; }
+.nodes-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.nbox {
+  display: flex; flex-direction: column; align-items: center;
+  border-radius: 6px; padding: 10px 14px; min-width: 72px; border: 1px solid;
+}
+.nbox .nm { font-size: 1.4rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.nbox .nc { font-size: .82rem; color: #94a3b8; margin-top: 3px; }
+.nbox .nr { font-size: .78rem; letter-spacing: .1em; text-transform: uppercase; color: #94a3b8; margin-top: 4px; }
+.n-start { border-color: #3b82f6; background: rgba(59,130,246,.15); }
+.n-start .nm { color: #3b82f6; }
+.n-mid   { border-color: rgba(0,43,92,.9); background: rgba(0,43,92,.4); }
+.n-mid .nm { color: #c8d3e0; }
+.n-conv  { border-color: #3b82f6!important; background: rgba(59,130,246,.25)!important; }
+.n-conv .nm { color: #3b82f6!important; }
+.n-conv .nr { color: #3b82f6!important; }
+.n-arr { color: #64748b; font-size: 1.2rem; flex-shrink: 0; }
+.hp {
+  margin-top: 10px; font-size: .9rem; color: #94a3b8;
+  background: rgba(59,130,246,.08); border: 1px solid rgba(59,130,246,.2);
+  border-radius: 5px; padding: 8px 14px; line-height: 1.6;
+}
+.hp span { color: #3b82f6; font-weight: 700; }
+.bot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+@media(max-width:700px){ .bot-grid { grid-template-columns: 1fr; } }
+.info-card { background: rgba(0,43,92,.3); border: 1px solid rgba(0,43,92,.7); border-radius: 8px; padding: 16px; }
+.ic-title { font-size: .9rem; color: rgb(230,92,0); letter-spacing: .15em; text-transform: uppercase; margin-bottom: 12px; }
+.ce-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.ce-chip { background: rgba(59,130,246,.12); border: 1px solid rgba(59,130,246,.3); border-radius: 5px; padding: 7px 12px; text-align: center; min-width: 70px; }
+.ce-chip .cv { font-size: 1.2rem; font-weight: 700; color: #3b82f6; }
+.ce-chip .cb { font-size: .78rem; color: #94a3b8; }
+.rule-list { list-style: none; }
+.rule-list li { font-size: .95rem; color: #c8d3e0; padding: 6px 0; border-bottom: 1px solid rgba(0,43,92,.4); line-height: 1.6; }
+.rule-list li:last-child { border-bottom: none; }
+.rule-list li span { color: #3b82f6; font-weight: 700; }
+
+footer {
+  background: rgb(0,28,60); border-top: 1px solid rgba(0,43,92,.6);
+  padding: 10px 28px; display: flex; justify-content: space-between; align-items: center;
+  font-size: .9rem; color: #facc15;
+}
+footer span { color: #fff; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="brand-title">F.O.C.U.S.STOCKS</div>
+    <div class="brand-sub">GB Algo — Goldbach Time Visual Guide</div>
+  </div>
+  <div class="hdr-right">Futures Edition &nbsp;|&nbsp; <span>Jachbit 2026</span><br>Goldbach Time Framework</div>
+</header>
+
+<main>
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('chart')">Path A — Live Chart</div>
+    <div class="tab" onclick="showTab('scenarios')">:29 Terminus Scenarios</div>
+    <div class="tab" onclick="showTab('paths')">Path A vs Path B</div>
+  </div>
+
+  <!-- TAB 1: MAIN CHART -->
+  <div class="panel active" id="panel-chart">
+    <div class="card">
+      <div class="card-title">Path A Bullish Delivery — Node-by-Node Price Flow</div>
+      <div class="hint">Scroll to zoom · Click &amp; drag to pan · Double-click to reset</div>
+      <canvas id="mainCanvas" height="360"></canvas>
+      <div class="ctrl-row">
+        <button class="btn" onclick="resetView()">Reset View</button>
+        <button class="btn" onclick="zoomIn()">Zoom In</button>
+        <button class="btn" onclick="zoomOut()">Zoom Out</button>
+      </div>
+      <div class="legend">
+        <div class="leg"><div class="ldot" style="background:rgb(230,92,0);"></div> Goldbach Node</div>
+        <div class="leg"><div class="ldot" style="background:#3b82f6;opacity:.6;"></div> CE Level (50% midpoint)</div>
+        <div class="leg"><div class="ldot" style="background:#22c55e;opacity:.7;"></div> Path A bullish delivery</div>
+        <div class="leg"><div class="ldot" style="background:#3b82f6;border:2px solid #3b82f6;"></div> :29 Terminus</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: SCENARIOS -->
+  <div class="panel" id="panel-scenarios">
+    <div class="sc-grid">
+
+      <div class="sc-card rev">
+        <div class="sc-lbl">Scenario 1 — Most Common</div>
+        <div class="sc-title">Hard Reversal at :29</div>
+        <canvas id="sc1" class="sc-canvas" height="160"></canvas>
+        <div class="sc-rules">
+          <div class="sc-rule">Price wicks high at exactly :29, drops fast</div>
+          <div class="sc-rule">Path A complete — new Path B activates at next :03</div>
+          <div class="sc-rule">Watch for bearish candle close below :29 open</div>
+          <div class="sc-rule">CE :35 acts as magnet on the way down</div>
+        </div>
+      </div>
+
+      <div class="sc-card pau">
+        <div class="sc-lbl">Scenario 2 — Wait &amp; See</div>
+        <div class="sc-title">Consolidation / Pause</div>
+        <canvas id="sc2" class="sc-canvas" height="160"></canvas>
+        <div class="sc-rules">
+          <div class="sc-rule">Price chops between :29 node and CE :35</div>
+          <div class="sc-rule">Algo "resting" — no clear direction yet</div>
+          <div class="sc-rule">Wait for next :00 node to see new path</div>
+          <div class="sc-rule">Do not force a trade in the chop zone</div>
+        </div>
+      </div>
+
+      <div class="sc-card con">
+        <div class="sc-lbl">Scenario 3 — Less Common</div>
+        <div class="sc-title">Continuation Push</div>
+        <canvas id="sc3" class="sc-canvas" height="160"></canvas>
+        <div class="sc-rules">
+          <div class="sc-rule">Price punches through :29, tags CE :35</div>
+          <div class="sc-rule">Strong undelivered institutional order flow</div>
+          <div class="sc-rule">:00 next hour becomes new path anchor</div>
+          <div class="sc-rule">Fresh Path A can restart from new :00</div>
+        </div>
+      </div>
+
+    </div>
+    <div class="sc-note">
+      Key rule: <strong>:29 is your ALERT zone, not a trade trigger.</strong><br>
+      Wait for price to show rejection (wick + close below) or acceptance (hold above) before acting.
+    </div>
+  </div>
+
+  <!-- TAB 3: PATHS -->
+  <div class="panel" id="panel-paths">
+    <div class="path-section">
+
+      <div class="path-row">
+        <div class="path-lbl pa-lbl">Path A — Bullish / Up Structure</div>
+        <div class="nodes-row">
+          <div class="nbox n-start"><div class="nm">:00</div><div class="nc">—</div><div class="nr">Open</div></div>
+          <div class="n-arr">→</div>
+          <div class="nbox n-mid"><div class="nm">:11</div><div class="nc">CE :14</div><div class="nr">Build</div></div>
+          <div class="n-arr">→</div>
+          <div class="nbox n-mid"><div class="nm">:41</div><div class="nc">CE :44</div><div class="nr">Extend</div></div>
+          <div class="n-arr">→</div>
+          <div class="nbox n-mid"><div class="nm">:03</div><div class="nc">CE :07</div><div class="nr">Pullback</div></div>
+          <div class="n-arr">→</div>
+          <div class="nbox n-mid"><div class="nm">:17</div><div class="nc">CE :23</div><div class="nr">Continue</div></div>
+          <div class="n-arr">→</div>
+          <div class="nbox n-conv"><div class="nm">:29</div><div class="nc">CE :35</div><div class="nr">Terminus</div></div>
+        </div>
+        <div class="hp">Trade the <span>:00 start</span> and <span>:29 terminus</span> — highest probability. Mid-nodes are lower probability entries.</div>
+      </div>
+
+      <div class="path-row">
+        <div class="path-lbl pb-lbl">Path B — Bearish / Down Structure</div>
+        <div class="nodes-row">
+          <div class="nbox n-start" style="border-color:#facc15;background:rgba(250,204,21,.12);"><div class="nm" style="color:#facc15;">:03</div><div class="nc">CE :07</div><div class="nr">Manip</div></div>
+          <div class="n-arr">→</div>
+          <div class="nbox n-mid"><div class="nm">:59</div><div class="nc">CE :65</div><div class="nr">Dist</div></div>
+          <div class="n-arr">→</div>
+          <div class="nbox n-mid"><div class="nm">:17</div><div class="nc">CE :23</div><div class="nr">Reverse</div></div>
+          <div class="n-arr">→</div>
+          <div class="nbox n-mid"><div class="nm">:11</div><div class="nc">CE :14</div><div class="nr">Drop</div></div>
+          <div class="n-arr">→</div>
+          <div class="nbox n-mid"><div class="nm">:47/:53</div><div class="nc">CE :50/56</div><div class="nr">Extend</div></div>
+          <div class="n-arr">→</div>
+          <div class="nbox n-conv"><div class="nm">:29</div><div class="nc">CE :35</div><div class="nr">Terminus</div></div>
+        </div>
+        <div class="hp">Note: <span>:59</span> wraps to the previous hour. Both paths end at <span>:29</span> — the convergence node with the highest probability reaction.</div>
+      </div>
+
+      <div class="bot-grid">
+        <div class="info-card">
+          <div class="ic-title">CE Levels — All 8 Midpoints</div>
+          <div class="ce-chips">
+            <div class="ce-chip"><div class="cv">:07</div><div class="cb">03→11</div></div>
+            <div class="ce-chip"><div class="cv">:14</div><div class="cb">11→17</div></div>
+            <div class="ce-chip"><div class="cv">:23</div><div class="cb">17→29</div></div>
+            <div class="ce-chip"><div class="cv">:35</div><div class="cb">29→41</div></div>
+            <div class="ce-chip"><div class="cv">:44</div><div class="cb">41→47</div></div>
+            <div class="ce-chip"><div class="cv">:50</div><div class="cb">47→53</div></div>
+            <div class="ce-chip"><div class="cv">:56</div><div class="cb">53→59</div></div>
+            <div class="ce-chip"><div class="cv">:65</div><div class="cb">59→71*</div></div>
+          </div>
+        </div>
+        <div class="info-card">
+          <div class="ic-title">The 5-Step Trading Rule</div>
+          <ul class="rule-list">
+            <li>1. Wait for swing to form <span>at a node minute</span></li>
+            <li>2. Confirm direction → identify Path A or B</li>
+            <li>3. Next node = your <span>price delivery target</span></li>
+            <li>4. CE level = <span>entry refinement</span> or partial exit</li>
+            <li>5. Exit at <span>:29 terminus</span> — do not overstay</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <div>F.O.C.U.S.STOCKS &nbsp;·&nbsp; GB Algo Visual Guide &nbsp;·&nbsp; Goldbach Time Framework</div>
+  <div><span>Jachbit 2026</span> &nbsp;·&nbsp; For informational use only — not financial advice</div>
+</footer>
+
+<script>
+// ── COLOUR PALETTE ────────────────────────────────────────────────────────
+const C = {
+  bg:     '#0a0f1e',
+  card:   '#0f172a',
+  navy:   'rgba(0,43,92,',
+  orange: 'rgb(230,92,0)',
+  blue:   '#3b82f6',
+  green:  '#22c55e',
+  red:    '#ef4444',
+  yellow: '#facc15',
+  muted:  '#e2e8f0',
+  text:   '#c8d3e0',
+  grid:   'rgba(0,43,92,0.5)'
+};
+
+// ── TAB SWITCHING ─────────────────────────────────────────────────────────
+function showTab(name) {
+  ['chart','scenarios','paths'].forEach((n,i) => {
+    document.querySelectorAll('.tab')[i].classList.toggle('active', n === name);
+    document.getElementById('panel-'+n).classList.toggle('active', n === name);
+  });
+  if (name === 'chart') drawMain();
+  if (name === 'scenarios') drawScenarios();
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────
+function hexAlpha(hex, a) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function drawGrid(ctx, W, H, padL, padR, padT, padB, xCount, yMin, yMax) {
+  const pw = W - padL - padR;
+  const ph = H - padT - padB;
+  ctx.strokeStyle = C.grid;
+  ctx.lineWidth = 1;
+  // horizontal grid lines
+  const ySteps = 5;
+  for (let i = 0; i <= ySteps; i++) {
+    const y = padT + (ph / ySteps) * i;
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
+  }
+}
+
+function dataToCanvas(val, min, max, padT, H, padB) {
+  const ph = H - padT - padB;
+  return padT + ph - ((val - min) / (max - min)) * ph;
+}
+
+function idxToX(i, total, padL, W, padR) {
+  return padL + (i / (total - 1)) * (W - padL - padR);
+}
+
+// ── MAIN CHART ────────────────────────────────────────────────────────────
+const MAIN_LABELS = [
+  ':00',':03','',':07','',':11','',':14','','',
+  ':17','','',':23','','','','','',':29',
+  ':35','',':41','',':44','',':47','',':50','',
+  ':53','',':56','',':59',':65'
+];
+const NODE_IDX = new Set([0,1,5,10,19,22,26,30,34]);
+const CE_IDX   = new Set([3,7,13,20,24,28,32,35]);
+const TERMINUS = 19;
+const BASE = 28350;
+const PRICES = [
+  BASE,    BASE-20, BASE-10, BASE+5,  BASE+30,
+  BASE+80, BASE+90, BASE+85, BASE+70, BASE+60,
+  BASE+120,BASE+150,BASE+170,BASE+160,BASE+155,
+  BASE+160,BASE+180,BASE+210,BASE+240,BASE+280,
+  BASE+260,BASE+240,BASE+350,BASE+340,BASE+335,
+  BASE+320,BASE+310,BASE+300,BASE+295,BASE+285,
+  BASE+270,BASE+260,BASE+255,BASE+245,BASE+230,BASE+220
+];
+
+let viewStart = 0, viewEnd = PRICES.length - 1;
+let isDragging = false, dragStartX = 0, dragViewStart = 0, dragViewEnd = 0;
+let hoverIdx = -1;
+
+function getPad() { return { L:60, R:70, T:30, B:44 }; }
+
+function drawMain() {
+  const canvas = document.getElementById('mainCanvas');
+  const DPR = window.devicePixelRatio || 1;
+  const cssW = canvas.parentElement.clientWidth - 40;
+  const cssH = Math.max(260, window.innerHeight - 440);
+  canvas.style.width  = cssW + 'px';
+  canvas.style.height = cssH + 'px';
+  canvas.width  = cssW * DPR;
+  canvas.height = cssH * DPR;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(DPR, DPR);
+  renderMain(ctx, cssW, cssH);
+}
+
+function renderMain(ctx, W, H) {
+  const p = getPad();
+  const slice = PRICES.slice(viewStart, viewEnd + 1);
+  const lblSlice = MAIN_LABELS.slice(viewStart, viewEnd + 1);
+  const yMin = Math.min(...slice) - 20;
+  const yMax = Math.max(...slice) + 20;
+  const total = slice.length;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // background
+  ctx.fillStyle = C.card;
+  ctx.fillRect(0, 0, W, H);
+
+  // grid
+  drawGrid(ctx, W, H, p.L, p.R, p.T, p.B, total, yMin, yMax);
+
+  // Y axis labels
+  ctx.fillStyle = C.text;
+  ctx.font = '12px Segoe UI';
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= 5; i++) {
+    const v = yMin + ((yMax - yMin) / 5) * (5 - i);
+    const y = p.T + (H - p.T - p.B) / 5 * i;
+    ctx.fillText(Math.round(v), W - p.R + 8, y + 4);
+  }
+
+  // terminus vertical line
+  const termRelIdx = TERMINUS - viewStart;
+  if (termRelIdx >= 0 && termRelIdx < total) {
+    const tx = idxToX(termRelIdx, total, p.L, W, p.R);
+    ctx.save();
+    ctx.setLineDash([6,4]);
+    ctx.strokeStyle = C.blue;
+    ctx.lineWidth = 1.5;
+    ctx.globalAlpha = 0.7;
+    ctx.beginPath();
+    ctx.moveTo(tx, p.T);
+    ctx.lineTo(tx, H - p.B);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = C.blue;
+    ctx.font = 'bold 12px Segoe UI';
+    ctx.textAlign = 'left';
+    ctx.fillText(':29 TERMINUS', tx + 4, p.T + 16);
+    ctx.restore();
+  }
+
+  // fill under line (green before terminus, muted after)
+  const termX = termRelIdx >= 0 && termRelIdx < total
+    ? idxToX(termRelIdx, total, p.L, W, p.R)
+    : W - p.R;
+
+  // green fill (before terminus)
+  ctx.beginPath();
+  ctx.moveTo(idxToX(0, total, p.L, W, p.R), H - p.B);
+  for (let i = 0; i < Math.min(termRelIdx + 1, total); i++) {
+    const x = idxToX(i, total, p.L, W, p.R);
+    const y = dataToCanvas(slice[i], yMin, yMax, p.T, H, p.B);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.lineTo(Math.min(termX, W - p.R), H - p.B);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(34,197,94,0.06)';
+  ctx.fill();
+
+  // main line — two segments
+  // segment 1: green (up to terminus)
+  ctx.beginPath();
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = 'rgba(34,197,94,0.9)';
+  for (let i = 0; i <= Math.min(termRelIdx, total - 1); i++) {
+    const x = idxToX(i, total, p.L, W, p.R);
+    const y = dataToCanvas(slice[i], yMin, yMax, p.T, H, p.B);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // segment 2: muted (after terminus)
+  if (termRelIdx < total - 1) {
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(100,116,139,0.5)';
+    for (let i = Math.max(termRelIdx, 0); i < total; i++) {
+      const x = idxToX(i, total, p.L, W, p.R);
+      const y = dataToCanvas(slice[i], yMin, yMax, p.T, H, p.B);
+      i === termRelIdx ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  // draw points (nodes + CE)
+  for (let i = 0; i < total; i++) {
+    const absIdx = i + viewStart;
+    const x = idxToX(i, total, p.L, W, p.R);
+    const y = dataToCanvas(slice[i], yMin, yMax, p.T, H, p.B);
+    if (absIdx === TERMINUS) {
+      ctx.beginPath();
+      ctx.arc(x, y, 7, 0, Math.PI * 2);
+      ctx.fillStyle = C.blue;
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    } else if (NODE_IDX.has(absIdx)) {
+      ctx.beginPath();
+      ctx.arc(x, y, 6, 0, Math.PI * 2);
+      ctx.fillStyle = C.orange;
+      ctx.fill();
+    } else if (CE_IDX.has(absIdx)) {
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(59,130,246,0.7)';
+      ctx.fill();
+    }
+  }
+
+  // X axis labels
+  ctx.textAlign = 'center';
+  ctx.font = '12px Segoe UI';
+  for (let i = 0; i < total; i++) {
+    const lbl = lblSlice[i];
+    if (!lbl) continue;
+    const absIdx = i + viewStart;
+    const x = idxToX(i, total, p.L, W, p.R);
+    ctx.fillStyle = absIdx === TERMINUS ? C.blue
+                  : NODE_IDX.has(absIdx) ? C.orange
+                  : CE_IDX.has(absIdx)   ? 'rgba(59,130,246,0.8)'
+                  : C.muted;
+    ctx.font = (absIdx === TERMINUS || NODE_IDX.has(absIdx)) ? 'bold 12px Segoe UI' : '11px Segoe UI';
+    ctx.fillText(lbl, x, H - p.B + 18);
+  }
+
+  // hover tooltip — no box, shadow text, always in bounds
+  if (hoverIdx >= 0 && hoverIdx < total) {
+    const absIdx = hoverIdx + viewStart;
+    const x = idxToX(hoverIdx, total, p.L, W, p.R);
+    const y = dataToCanvas(slice[hoverIdx], yMin, yMax, p.T, H, p.B);
+
+    const lbl = absIdx === TERMINUS ? ':29 TERMINUS — Exit zone'
+              : NODE_IDX.has(absIdx) ? `Node ${MAIN_LABELS[absIdx]}`
+              : CE_IDX.has(absIdx)   ? `CE ${MAIN_LABELS[absIdx]} — 50% midpoint`
+              : '';
+    const val = `Price: ${slice[hoverIdx]}`;
+
+    // crosshair
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(x, p.T); ctx.lineTo(x, H - p.B); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(p.L, y); ctx.lineTo(W - p.R, y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // text — anchor to right side if near left edge
+    ctx.save();
+    ctx.font = 'bold 13px Segoe UI';
+    const lblW = ctx.measureText(lbl || val).width;
+    const flip = x + lblW + 20 > W - p.R;
+    const tx = flip ? x - lblW - 12 : x + 10;
+    const ty = Math.max(p.T + 14, Math.min(y - 6, H - p.B - 30));
+
+    ctx.shadowColor = '#000';
+    ctx.shadowBlur = 6;
+
+    if (lbl) {
+      ctx.fillStyle = absIdx === TERMINUS ? C.blue : C.yellow;
+      ctx.fillText(lbl, tx, ty);
+    }
+    ctx.font = '13px Segoe UI';
+    ctx.fillStyle = '#fff';
+    ctx.fillText(val, tx, ty + 18);
+    ctx.restore();
+  }
+}
+
+// view controls
+function resetView() {
+  viewStart = 0;
+  viewEnd = PRICES.length - 1;
+  hoverIdx = -1;
+  // force full remeasure
+  const canvas = document.getElementById('mainCanvas');
+  canvas.style.width = '';
+  canvas.style.height = '';
+  drawMain();
+}
+function zoomIn()  {
+  const mid = Math.floor((viewStart + viewEnd) / 2);
+  const half = Math.max(4, Math.floor((viewEnd - viewStart) / 2 * 0.7));
+  viewStart = Math.max(0, mid - half);
+  viewEnd   = Math.min(PRICES.length - 1, mid + half);
+  drawMain();
+}
+function zoomOut() {
+  const mid = Math.floor((viewStart + viewEnd) / 2);
+  const half = Math.min(Math.floor(PRICES.length / 2), Math.floor((viewEnd - viewStart) / 2 * 1.4));
+  viewStart = Math.max(0, mid - half);
+  viewEnd   = Math.min(PRICES.length - 1, mid + half);
+  drawMain();
+}
+
+// mouse events
+function setupMainMouse() {
+  const canvas = document.getElementById('mainCanvas');
+  canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    if (e.deltaY < 0) zoomIn(); else zoomOut();
+  }, { passive: false });
+
+  canvas.addEventListener('mousedown', e => {
+    isDragging = true;
+    dragStartX = e.clientX;
+    dragViewStart = viewStart;
+    dragViewEnd   = viewEnd;
+  });
+  canvas.addEventListener('mousemove', e => {
+    if (isDragging) {
+      const dx = e.clientX - dragStartX;
+      const p = getPad();
+      const cssW = canvas.parentElement.clientWidth - 40;
+      const total = dragViewEnd - dragViewStart + 1;
+      const pxPerPt = (cssW - p.L - p.R) / (total - 1);
+      const shift = Math.round(-dx / pxPerPt);
+      let ns = dragViewStart + shift;
+      let ne = dragViewEnd + shift;
+      if (ns < 0) { ne -= ns; ns = 0; }
+      if (ne >= PRICES.length) { ns -= (ne - PRICES.length + 1); ne = PRICES.length - 1; }
+      viewStart = Math.max(0, ns);
+      viewEnd   = Math.min(PRICES.length - 1, ne);
+      hoverIdx = -1;
+      drawMain();
+    } else {
+      const rect = canvas.getBoundingClientRect();
+      const mx = (e.clientX - rect.left) / (rect.width / canvas.width) / (window.devicePixelRatio||1);
+      const p = getPad();
+      const cssW = canvas.parentElement.clientWidth - 40;
+      const total = viewEnd - viewStart + 1;
+      const nearest = Math.round((mx - p.L) / ((cssW - p.L - p.R) / (total - 1)));
+      hoverIdx = Math.max(0, Math.min(total - 1, nearest));
+      drawMain();
+    }
+  });
+  canvas.addEventListener('mouseup', () => { isDragging = false; });
+  canvas.addEventListener('mouseleave', () => { isDragging = false; hoverIdx = -1; drawMain(); });
+  canvas.addEventListener('dblclick', resetView);
+  canvas.addEventListener('touchstart', e => {
+    dragStartX = e.touches[0].clientX;
+    dragViewStart = viewStart; dragViewEnd = viewEnd;
+    isDragging = true;
+  }, { passive: true });
+  canvas.addEventListener('touchmove', e => {
+    if (!isDragging) return;
+    const dx = e.touches[0].clientX - dragStartX;
+    const p = getPad();
+    const cssW = canvas.parentElement.clientWidth - 40;
+    const total = dragViewEnd - dragViewStart + 1;
+    const pxPerPt = (cssW - p.L - p.R) / (total - 1);
+    const shift = Math.round(-dx / pxPerPt);
+    let ns = dragViewStart + shift, ne = dragViewEnd + shift;
+    if (ns < 0) { ne -= ns; ns = 0; }
+    if (ne >= PRICES.length) { ns -= (ne - PRICES.length + 1); ne = PRICES.length - 1; }
+    viewStart = Math.max(0, ns); viewEnd = Math.min(PRICES.length - 1, ne);
+    drawMain();
+  }, { passive: true });
+  canvas.addEventListener('touchend', () => { isDragging = false; });
+}
+
+// ── SCENARIO CHARTS ───────────────────────────────────────────────────────
+const SC_DATA = {
+  sc1: { pts: [40,52,63,72,79,84,86,84,76,66,54,42], color: '#ef4444', label: 'Hard Reversal' },
+  sc2: { pts: [40,52,63,72,79,84,83,85,82,86,83,84], color: '#facc15', label: 'Consolidation' },
+  sc3: { pts: [40,52,63,72,79,84,87,91,96,100,98,102], color: '#22c55e', label: 'Continuation' },
+};
+const SC_LABELS = [':17','',':23','','',':29',':35','','','',':41',''];
+const SC_TERM = 5; // :29 is index 5
+
+function drawScenario(id) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  const DPR = window.devicePixelRatio || 1;
+  const cssW = canvas.parentElement.clientWidth - 32;
+  const cssH = 160;
+  canvas.style.width  = cssW + 'px';
+  canvas.style.height = cssH + 'px';
+  canvas.width  = cssW * DPR;
+  canvas.height = cssH * DPR;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(DPR, DPR);
+
+  const { pts, color } = SC_DATA[id];
+  const W = cssW, H = cssH;
+  const pad = { L:10, R:10, T:16, B:28 };
+  const pw = W - pad.L - pad.R;
+  const ph = H - pad.T - pad.B;
+  const total = pts.length;
+  const yMin = Math.min(...pts) - 5;
+  const yMax = Math.max(...pts) + 5;
+
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(0, 0, W, H);
+
+  // grid lines
+  ctx.strokeStyle = 'rgba(0,43,92,0.5)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 3; i++) {
+    const y = pad.T + (ph / 3) * i;
+    ctx.beginPath(); ctx.moveTo(pad.L, y); ctx.lineTo(W - pad.R, y); ctx.stroke();
+  }
+
+  // terminus vertical line
+  const tx = pad.L + (SC_TERM / (total - 1)) * pw;
+  ctx.save();
+  ctx.setLineDash([4,3]);
+  ctx.strokeStyle = C.blue;
+  ctx.lineWidth = 1.5;
+  ctx.globalAlpha = 0.7;
+  ctx.beginPath(); ctx.moveTo(tx, pad.T); ctx.lineTo(tx, H - pad.B); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+
+  // line — green before :29, accent color after
+  for (let seg = 0; seg < 2; seg++) {
+    const start = seg === 0 ? 0 : SC_TERM;
+    const end   = seg === 0 ? SC_TERM + 1 : total;
+    const segColor = seg === 0 ? 'rgba(34,197,94,0.9)' : color;
+    ctx.beginPath();
+    ctx.strokeStyle = segColor;
+    ctx.lineWidth = 2.5;
+    for (let i = start; i < end; i++) {
+      const x = pad.L + (i / (total - 1)) * pw;
+      const y = pad.T + ph - ((pts[i] - yMin) / (yMax - yMin)) * ph;
+      i === start ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  // :29 dot
+  const dotX = pad.L + (SC_TERM / (total - 1)) * pw;
+  const dotY = pad.T + ph - ((pts[SC_TERM] - yMin) / (yMax - yMin)) * ph;
+  ctx.beginPath();
+  ctx.arc(dotX, dotY, 6, 0, Math.PI * 2);
+  ctx.fillStyle = C.blue;
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // X labels
+  ctx.textAlign = 'center';
+  ctx.font = '11px Segoe UI';
+  for (let i = 0; i < total; i++) {
+    const lbl = SC_LABELS[i];
+    if (!lbl) continue;
+    const x = pad.L + (i / (total - 1)) * pw;
+    ctx.fillStyle = lbl === ':29' ? C.blue : C.muted;
+    ctx.font = lbl === ':29' ? 'bold 12px Segoe UI' : '11px Segoe UI';
+    ctx.fillText(lbl, x, H - pad.B + 16);
+  }
+}
+
+function drawScenarios() {
+  ['sc1','sc2','sc3'].forEach(drawScenario);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  drawMain();
+  setupMainMouse();
+  // Scenario canvases need the panel to be measurable — temporarily activate
+  const sp = document.getElementById('panel-scenarios');
+  const prev = sp.style.display;
+  sp.style.cssText = 'display:block;visibility:hidden;position:absolute;width:100%;';
+  drawScenarios();
+  sp.style.cssText = prev || '';
+});
+
+window.addEventListener('resize', () => {
+  const active = document.querySelector('.panel.active');
+  if (active && active.id === 'panel-chart') drawMain();
+  if (active && active.id === 'panel-scenarios') drawScenarios();
+});
+</script>
+</body>
+</html>
