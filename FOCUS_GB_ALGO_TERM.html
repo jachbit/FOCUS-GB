@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>F.O.C.U.S.STOCKS — GB Algo Termination Tracker</title>
+<style>
+  :root {
+    --navy:    #002b5c;
+    --orange:  #e65c00;
+    --blue:    #3b82f6;
+    --green:   #22c55e;
+    --red:     #ef4444;
+    --yellow:  #fbbf24;
+    --bg:      #0a0f1a;
+    --card:    #0f172a;
+    --border:  #1e3a5f;
+    --muted:   #64748b;
+    --text:    #e2e8f0;
+    --dim:     #94a3b8;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { height:100%; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--navy);
+    border-bottom: 3px solid var(--orange);
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .header-left .brand {
+    font-size: 1.3rem;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 1px;
+  }
+  .header-left .subtitle {
+    font-size: 0.78rem;
+    color: var(--orange);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+  .header-right {
+    text-align: right;
+  }
+  .header-right .credit {
+    font-size: 0.78rem;
+    color: var(--blue);
+    font-weight: 600;
+  }
+  .header-right .live-clock {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--yellow);
+    font-variant-numeric: tabular-nums;
+    margin-top: 2px;
+  }
+  .live-dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    background: var(--red);
+    border-radius: 50%;
+    margin-right: 5px;
+    animation: blink 1s infinite;
+    vertical-align: middle;
+  }
+
+  /* ── LAYOUT ── */
+  .main {
+    display: flex;
+    flex: 1;
+    padding: 16px;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .left-panel  { flex: 1; min-width: 340px; display: flex; flex-direction: column; gap: 14px; }
+  .right-panel { width: 340px; display: flex; flex-direction: column; gap: 14px; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .card-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--orange);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .realtime-badge {
+    font-size: 0.65rem;
+    color: var(--green);
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+
+  /* ── TIME ROWS ── */
+  .tz-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: rgba(0,43,92,0.3);
+    margin-bottom: 8px;
+    transition: all 0.3s;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .tz-row.hit-gb   { border-color: var(--blue);   background: rgba(59,130,246,0.12); box-shadow: 0 0 12px rgba(59,130,246,0.3); }
+  .tz-row.hit-ce   { border-color: var(--yellow);  background: rgba(251,191,36,0.1);  box-shadow: 0 0 12px rgba(251,191,36,0.25); }
+  .tz-row.hit-term { border-color: var(--red);     background: rgba(239,68,68,0.15);  box-shadow: 0 0 20px rgba(239,68,68,0.5); animation: term-pulse 1s infinite; }
+  @keyframes term-pulse {
+    0%,100% { box-shadow: 0 0 20px rgba(239,68,68,0.5); }
+    50%      { box-shadow: 0 0 35px rgba(239,68,68,0.8); }
+  }
+  .tz-name  { font-size: 0.72rem; color: var(--muted); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+  .tz-time  { font-size: 1.4rem; font-weight: 700; font-variant-numeric: tabular-nums; color: #fff; }
+  .tz-badges { display: flex; gap: 10px; align-items: center; }
+  .tz-col   { text-align: center; min-width: 44px; }
+  .tz-col-label { font-size: 0.65rem; color: var(--muted); margin-bottom: 3px; }
+  .tz-col-val { font-size: 1rem; font-weight: 700; }
+  .val-ok   { color: var(--green); }
+  .val-no   { color: var(--muted); }
+  .val-term { color: var(--red); animation: blink 0.5s infinite; }
+  .status-chip {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  .chip-gb   { background: rgba(59,130,246,0.25); color: var(--blue);   border: 1px solid var(--blue); }
+  .chip-ce   { background: rgba(251,191,36,0.2);  color: var(--yellow); border: 1px solid var(--yellow); }
+  .chip-term { background: rgba(239,68,68,0.3);   color: var(--red);    border: 1px solid var(--red); animation: blink 0.5s infinite; }
+  .chip-dual { background: rgba(230,92,0,0.25);   color: var(--orange); border: 1px solid var(--orange); }
+  .chip-none { background: rgba(100,116,139,0.15); color: var(--muted); border: 1px solid var(--muted); }
+
+  /* ── CALCULATION METHODS ── */
+  .method-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .method-box {
+    flex: 1;
+    background: rgba(0,43,92,0.4);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px;
+  }
+  .method-title { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .method-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .method-item  { display: flex; align-items: center; justify-content: space-between; padding: 4px 6px; background: rgba(0,0,0,0.3); border-radius: 4px; }
+  .method-lbl   { font-size: 0.7rem; color: var(--muted); }
+  .method-val   { font-size: 0.95rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 4px; }
+  .badge {
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.62rem;
+    font-weight: 700;
+  }
+  .badge-gb   { background: var(--blue);   color: #fff; }
+  .badge-ce   { background: var(--yellow); color: #000; }
+  .badge-term { background: var(--red);    color: #fff; animation: blink 0.5s infinite; }
+
+  /* ── ALGO PATHS ── */
+  .algo-paths { display: flex; flex-direction: column; gap: 10px; }
+  .path-card  {
+    background: rgba(0,43,92,0.3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+  }
+  .path-label { font-size: 0.68rem; color: var(--blue); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+  .path-nodes { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+  .path-node  {
+    padding: 3px 8px;
+    background: rgba(0,43,92,0.6);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
+    transition: all 0.3s;
+  }
+  .path-node.active {
+    background: rgba(230,92,0,0.3);
+    border-color: var(--orange);
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 0 8px rgba(230,92,0,0.6);
+    transform: scale(1.08);
+  }
+  .path-node.term {
+    background: rgba(239,68,68,0.3);
+    border-color: var(--red);
+    color: var(--red);
+    font-weight: 700;
+  }
+  .path-arrow { color: var(--muted); font-size: 0.75rem; }
+
+  /* ── CONFLUENCE METER ── */
+  .meter-wrap { margin-top: 8px; }
+  .meter-bar  {
+    height: 16px;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .meter-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--blue), var(--green), var(--yellow), var(--orange), var(--red));
+    border-radius: 8px;
+    transition: width 0.4s ease;
+  }
+  .meter-label { font-size: 0.8rem; color: var(--dim); font-weight: 600; }
+  .meter-label.hot { color: var(--red); font-weight: 700; }
+
+  /* ── SIGNALS ── */
+  .signal-list { display: flex; flex-direction: column; gap: 6px; }
+  .signal-item {
+    padding: 9px 12px;
+    background: rgba(0,43,92,0.3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-align: center;
+    transition: all 0.3s;
+    letter-spacing: 1px;
+  }
+  .signal-item.active {
+    background: rgba(230,92,0,0.2);
+    border-color: var(--orange);
+    color: #fff;
+    box-shadow: 0 0 12px rgba(230,92,0,0.4);
+  }
+  .signal-item.term-active {
+    background: rgba(239,68,68,0.25);
+    border-color: var(--red);
+    color: var(--red);
+    box-shadow: 0 0 16px rgba(239,68,68,0.5);
+    animation: blink-border 0.5s infinite;
+  }
+  @keyframes blink-border {
+    0%,100% { box-shadow: 0 0 16px rgba(239,68,68,0.5); }
+    50%      { box-shadow: 0 0 28px rgba(239,68,68,0.8); }
+  }
+
+  /* ── REFERENCE NUMBERS ── */
+  .ref-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .ref-group  { }
+  .ref-title  { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .ref-nums   { display: flex; flex-wrap: wrap; gap: 4px; }
+  .ref-num    { padding: 2px 7px; border-radius: 3px; font-size: 0.75rem; font-weight: 600; }
+  .ref-num.gb { background: rgba(59,130,246,0.2); border: 1px solid var(--blue);   color: var(--blue); }
+  .ref-num.ce { background: rgba(251,191,36,0.15); border: 1px solid var(--yellow); color: var(--yellow); }
+  .ref-num.critical { background: rgba(239,68,68,0.25); border: 1px solid var(--red); color: var(--red); font-weight: 700; animation: glow-red 2s infinite; }
+  @keyframes glow-red { 0%,100% { box-shadow: 0 0 4px rgba(239,68,68,0.4); } 50% { box-shadow: 0 0 10px rgba(239,68,68,0.8); } }
+  .term-summary {
+    padding: 8px 10px;
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.4);
+    border-radius: 5px;
+    font-size: 0.75rem;
+    color: var(--red);
+    font-weight: 600;
+  }
+
+  /* ── UPCOMING TERMINATIONS ── */
+  .upcoming-list { display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow-y: auto; }
+  .upc-item {
+    padding: 8px 10px;
+    border-radius: 5px;
+    border-left: 3px solid var(--border);
+    background: rgba(0,43,92,0.3);
+    font-size: 0.78rem;
+    line-height: 1.5;
+  }
+  .upc-item.upc-critical { border-left-color: var(--orange); background: rgba(230,92,0,0.1); }
+  .upc-item.upc-term     { border-left-color: var(--red);    background: rgba(239,68,68,0.1); }
+  .upc-time  { font-weight: 700; color: #fff; }
+  .upc-desc  { color: var(--orange); font-weight: 600; }
+  .upc-nums  { color: var(--muted); font-size: 0.72rem; }
+  .upc-fire  { color: var(--red); }
+
+  /* ── ALERTS ── */
+  .alert-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .alert-lbl { font-size: 0.78rem; color: var(--muted); }
+  .toggle-wrap { display: flex; align-items: center; gap: 8px; }
+  .toggle {
+    width: 38px; height: 20px; border-radius: 10px;
+    background: var(--green); cursor: pointer; position: relative; transition: background 0.2s;
+  }
+  .toggle-knob {
+    position: absolute; top: 2px; left: 2px;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #fff; transition: left 0.2s;
+  }
+  .toggle-state { font-size: 0.78rem; color: var(--muted); }
+  .test-btn {
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    font-size: 0.7rem; padding: 3px 10px; border-radius: 4px; cursor: pointer;
+  }
+  .test-btn:hover { border-color: var(--orange); color: var(--orange); }
+
+  /* ── FOOTER ── */
+  .footer {
+    background: var(--navy);
+    border-top: 1px solid var(--border);
+    padding: 8px 24px;
+    font-size: 0.7rem;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  /* ── UTILS ── */
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  @media (max-width: 768px) {
+    .right-panel { width: 100%; }
+    .main { padding: 10px; gap: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="brand">F.O.C.U.S.STOCKS</div>
+    <div class="subtitle">GB Algo Termination Tracker &nbsp;·&nbsp; Goldbach &amp; CE Dual System</div>
+  </div>
+  <div class="header-right">
+    <div class="credit">Jachbit 2026 · Personal Edition</div>
+    <div class="live-clock">
+      <span class="live-dot"></span>
+      <span id="live-clock">--:--:--</span>
+      &nbsp;<span style="font-size:0.65rem;color:var(--green);letter-spacing:1px;">LIVE</span>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+
+    <!-- Dual Time Analysis -->
+    <div class="card">
+      <div class="card-title">
+        Dual Time System Analysis
+        <span class="realtime-badge">REAL-TIME</span>
+      </div>
+
+      <!-- NY Row -->
+      <div class="tz-row" id="ny-row">
+        <div>
+          <div class="tz-name">New York</div>
+          <div class="tz-time" id="ny-time">--:--:--</div>
+        </div>
+        <div class="tz-badges">
+          <div class="tz-col">
+            <div class="tz-col-label">GB</div>
+            <div class="tz-col-val val-no" id="ny-gb">✗</div>
+          </div>
+          <div class="tz-col">
+            <div class="tz-col-label">CE</div>
+            <div class="tz-col-val val-no" id="ny-ce">✗</div>
+          </div>
+          <div class="tz-col">
+            <div class="tz-col-label">STATUS</div>
+            <span class="status-chip chip-none" id="ny-status">--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Zurich Row -->
+      <div class="tz-row" id="zh-row">
+        <div>
+          <div class="tz-name">Zurich</div>
+          <div class="tz-time" id="zh-time">--:--:--</div>
+        </div>
+        <div class="tz-badges">
+          <div class="tz-col">
+            <div class="tz-col-label">GB</div>
+            <div class="tz-col-val val-no" id="zh-gb">✗</div>
+          </div>
+          <div class="tz-col">
+            <div class="tz-col-label">CE</div>
+            <div class="tz-col-val val-no" id="zh-ce">✗</div>
+          </div>
+          <div class="tz-col">
+            <div class="tz-col-label">STATUS</div>
+            <span class="status-chip chip-none" id="zh-status">--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Calculation Methods -->
+      <div class="method-row">
+        <div class="method-box">
+          <div class="method-title">Addition Method &nbsp; H + M</div>
+          <div class="method-grid">
+            <div class="method-item">
+              <span class="method-lbl">NY</span>
+              <span class="method-val" id="ny-add">--</span>
+            </div>
+            <div class="method-item">
+              <span class="method-lbl">ZH</span>
+              <span class="method-val" id="zh-add">--</span>
+            </div>
+          </div>
+        </div>
+        <div class="method-box">
+          <div class="method-title">Subtraction Method &nbsp; M − H</div>
+          <div class="method-grid">
+            <div class="method-item">
+              <span class="method-lbl">NY</span>
+              <span class="method-val" id="ny-sub">--</span>
+            </div>
+            <div class="method-item">
+              <span class="method-lbl">ZH</span>
+              <span class="method-val" id="zh-sub">--</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Algorithm Paths -->
+    <div class="card">
+      <div class="card-title">Algorithm Paths</div>
+      <div class="algo-paths">
+        <div class="path-card">
+          <div class="path-label">Algo 1 Path</div>
+          <div class="path-nodes" id="path1">
+            <span class="path-node" data-v="0">0/100</span>
+            <span class="path-arrow">→</span>
+            <span class="path-node" data-v="11">11/89</span>
+            <span class="path-arrow">→</span>
+            <span class="path-node" data-v="59">59/41</span>
+            <span class="path-arrow">→</span>
+            <span class="path-node" data-v="97">97/3</span>
+            <span class="path-arrow">→</span>
+            <span class="path-node" data-v="83">83/17</span>
+            <span class="path-arrow">→</span>
+            <span class="path-node term" data-v="29">29/71</span>
+          </div>
+        </div>
+        <div class="path-card">
+          <div class="path-label">Algo 2 Path</div>
+          <div class="path-nodes" id="path2">
+            <span class="path-node" data-v="3">3/97</span>
+            <span class="path-arrow">→</span>
+            <span class="path-node" data-v="41">41/59</span>
+            <span class="path-arrow">→</span>
+            <span class="path-node" data-v="17">17/83</span>
+            <span class="path-arrow">→</span>
+            <span class="path-node" data-v="89">89/11</span>
+            <span class="path-arrow">→</span>
+            <span class="path-node" data-v="53">53/47</span>
+            <span class="path-arrow">→</span>
+            <span class="path-node term" data-v="71">71/29</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confluence Meter -->
+    <div class="card">
+      <div class="card-title">Confluence Strength</div>
+      <div class="meter-wrap">
+        <div class="meter-bar">
+          <div class="meter-fill" id="meter-fill" style="width:0%"></div>
+        </div>
+        <div class="meter-label" id="meter-label">No significant confluence</div>
+      </div>
+    </div>
+
+  </div><!-- /left-panel -->
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+
+    <!-- Algo Signals -->
+    <div class="card">
+      <div class="card-title">Algo Signals</div>
+      <div class="signal-list">
+        <div class="signal-item" id="sig-29">29 &nbsp;·&nbsp; LIQUIDITY VOID</div>
+        <div class="signal-item" id="sig-35">35 &nbsp;·&nbsp; ALGO TERMINATION</div>
+        <div class="signal-item" id="sig-71">71 &nbsp;·&nbsp; LIQUIDITY VOID</div>
+        <div class="signal-item" id="sig-77">77 &nbsp;·&nbsp; ALGO TERMINATION</div>
+        <div class="signal-item" id="sig-double">DOUBLE GOLDBACH CONFLUENCE</div>
+      </div>
+    </div>
+
+    <!-- Reference Numbers -->
+    <div class="card">
+      <div class="card-title">Reference Numbers</div>
+      <div class="ref-grid">
+        <div class="ref-group">
+          <div class="ref-title">GB Numbers</div>
+          <div class="ref-nums">
+            <span class="ref-num gb">0</span>
+            <span class="ref-num gb">3</span>
+            <span class="ref-num gb">11</span>
+            <span class="ref-num gb">17</span>
+            <span class="ref-num gb critical">29</span>
+            <span class="ref-num gb">41</span>
+            <span class="ref-num gb">47</span>
+            <span class="ref-num gb">50</span>
+            <span class="ref-num gb">53</span>
+            <span class="ref-num gb">59</span>
+            <span class="ref-num gb critical">71</span>
+            <span class="ref-num gb">83</span>
+            <span class="ref-num gb">89</span>
+            <span class="ref-num gb">97</span>
+            <span class="ref-num gb">100</span>
+          </div>
+        </div>
+        <div class="ref-group">
+          <div class="ref-title">CE Numbers</div>
+          <div class="ref-nums">
+            <span class="ref-num ce">7</span>
+            <span class="ref-num ce">14</span>
+            <span class="ref-num ce">23</span>
+            <span class="ref-num ce critical">35</span>
+            <span class="ref-num ce">44</span>
+            <span class="ref-num ce">56</span>
+            <span class="ref-num ce">65</span>
+            <span class="ref-num ce critical">77</span>
+          </div>
+        </div>
+      </div>
+      <div class="term-summary">
+        Algo Terminations &nbsp;·&nbsp; 29/35 &nbsp;|&nbsp; 71/77
+      </div>
+    </div>
+
+    <!-- Next Algo Terminations -->
+    <div class="card">
+      <div class="card-title">Next Algo Terminations</div>
+      <div class="upcoming-list" id="upcoming-list">
+        <div class="upc-item" style="color:var(--muted);font-size:0.78rem;">Calculating...</div>
+      </div>
+    </div>
+
+    <!-- Alerts -->
+    <div class="card">
+      <div class="card-title">Alerts</div>
+      <div class="alert-row">
+        <span class="alert-lbl">Node warnings</span>
+        <div class="toggle-wrap">
+          <div class="toggle" id="toggle-el" onclick="toggleAlerts()">
+            <div class="toggle-knob" id="toggle-knob"></div>
+          </div>
+          <span class="toggle-state" id="toggle-state">ON</span>
+        </div>
+      </div>
+      <div class="alert-row" style="margin-bottom:0;">
+        <span class="alert-lbl" style="font-size:0.72rem;color:var(--muted);">GB · CE · Termination · Double</span>
+        <button class="test-btn" onclick="testAllBeeps()">TEST</button>
+      </div>
+    </div>
+
+  </div><!-- /right-panel -->
+
+</div><!-- /main -->
+
+<!-- FOOTER -->
+<div class="footer">
+  <span>F.O.C.U.S.STOCKS &nbsp;·&nbsp; GB Algo Termination Tracker</span>
+  <span>Goldbach Time Framework &nbsp;·&nbsp; Jachbit 2026</span>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// REFERENCE DATA
+// ═══════════════════════════════════════════════════════════════
+const GB_NUMS   = [0,3,11,17,29,41,47,50,53,59,71,83,89,97,100];
+const CE_NUMS   = [7,14,23,35,44,56,65,77];
+const TERM_GB   = [29,71];
+const TERM_CE   = [35,77];
+
+const OPPOSITES = {0:100,100:0,3:97,97:3,11:89,89:11,17:83,83:17,
+                   29:71,71:29,41:59,59:41,47:53,53:47};
+
+function isGB(n)   { return GB_NUMS.includes(Math.abs(n)); }
+function isCE(n)   { return CE_NUMS.includes(Math.abs(n)); }
+function isTerm(n) { return TERM_GB.includes(Math.abs(n)) || TERM_CE.includes(Math.abs(n)); }
+
+function getStatus(sum, diff) {
+  const tS = isTerm(sum), tD = isTerm(diff);
+  if (tS || tD) {
+    const v = tS ? sum : diff;
+    if (v===29) return {type:'term', text:'A1 END!'};
+    if (v===71) return {type:'term', text:'A2 END!'};
+    if (v===35) return {type:'term', text:'CE 35!'};
+    if (v===77) return {type:'term', text:'CE 77!'};
+  }
+  const gbHit = isGB(sum)||isGB(diff);
+  const ceHit = isCE(sum)||isCE(diff);
+  if (gbHit && ceHit) return {type:'dual', text:'DUAL'};
+  if (gbHit)          return {type:'gb',   text:'GB'};
+  if (ceHit)          return {type:'ce',   text:'CE'};
+  return {type:'none', text:'--'};
+}
+
+function numBadges(n) {
+  let s = `${n}`;
+  if (isTerm(n)) s += ' <span class="badge badge-term">END</span>';
+  else if (isGB(n)) s += ' <span class="badge badge-gb">GB</span>';
+  else if (isCE(n)) s += ' <span class="badge badge-ce">CE</span>';
+  return s;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AUDIO
+// ═══════════════════════════════════════════════════════════════
+let alertsOn = true;
+let audioCtx  = null;
+let _lastAlertKey = '';
+
+function getACtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  return audioCtx;
+}
+function beep(freq=880, dur=0.18, vol=0.4, delay=0) {
+  try {
+    const ctx  = getACtx();
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine'; osc.frequency.value = freq;
+    gain.gain.setValueAtTime(vol, ctx.currentTime + delay);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + dur + 0.05);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(ctx.currentTime + delay);
+    osc.stop(ctx.currentTime + delay + dur + 0.05);
+  } catch(e) {}
+}
+// GB hit — single soft beep
+function beepGB()   { beep(660, 0.14, 0.3); }
+// CE hit — double beep
+function beepCE()   { beep(880, 0.14, 0.35); beep(880, 0.14, 0.35, 0.22); }
+// Algo Termination — 3-tone ascending (most important)
+function beepTerm() { beep(880,0.18,0.5); beep(1100,0.22,0.5,0.22); beep(1320,0.28,0.5,0.46); }
+// Double Goldbach — 4-tone special
+function beepDouble(){ beep(660,0.14,0.45); beep(880,0.16,0.5,0.18); beep(1100,0.18,0.5,0.38); beep(1320,0.24,0.55,0.60); }
+
+function testAllBeeps() {
+  beepGB();
+  setTimeout(beepCE,   600);
+  setTimeout(beepTerm, 1400);
+  setTimeout(beepDouble,2600);
+}
+
+function toggleAlerts() {
+  alertsOn = !alertsOn;
+  document.getElementById('toggle-el').style.background   = alertsOn ? 'var(--green)' : '#444';
+  document.getElementById('toggle-knob').style.left       = alertsOn ? '2px' : '20px';
+  document.getElementById('toggle-state').textContent     = alertsOn ? 'ON' : 'OFF';
+}
+
+function fireAlerts(nyStatus, zhStatus) {
+  if (!alertsOn) return;
+  const key = nyStatus.type + '|' + zhStatus.type;
+  if (key === _lastAlertKey) return;
+  _lastAlertKey = key;
+
+  const nyTerm = nyStatus.type === 'term';
+  const zhTerm = zhStatus.type === 'term';
+  if (nyTerm && zhTerm)             { beepDouble(); return; }
+  if (nyTerm || zhTerm)             { beepTerm();   return; }
+  if (nyStatus.type==='dual' || zhStatus.type==='dual') { beepCE(); return; }
+  if (nyStatus.type==='ce'   || zhStatus.type==='ce')   { beepCE(); return; }
+  if (nyStatus.type==='gb'   || zhStatus.type==='gb')   { beepGB(); return; }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN UPDATE
+// ═══════════════════════════════════════════════════════════════
+function pad2(n) { return String(n).padStart(2,'0'); }
+
+function update() {
+  const now = new Date();
+
+  // Live clock (local)
+  document.getElementById('live-clock').textContent =
+    `${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
+
+  // NY time
+  const nyT = new Date(now.toLocaleString('en-US', {timeZone:'America/New_York'}));
+  const nyH = nyT.getHours(), nyM = nyT.getMinutes(), nyS = nyT.getSeconds();
+  const nySum = nyH + nyM, nyDiff = Math.abs(nyM - nyH);
+
+  // Zurich time
+  const zhT = new Date(now.toLocaleString('en-US', {timeZone:'Europe/Zurich'}));
+  const zhH = zhT.getHours(), zhM = zhT.getMinutes(), zhS = zhT.getSeconds();
+  const zhSum = zhH + zhM, zhDiff = Math.abs(zhM - zhH);
+
+  // Times
+  document.getElementById('ny-time').textContent = `${pad2(nyH)}:${pad2(nyM)}:${pad2(nyS)}`;
+  document.getElementById('zh-time').textContent = `${pad2(zhH)}:${pad2(zhM)}:${pad2(zhS)}`;
+
+  // Statuses
+  const nyStatus = getStatus(nySum, nyDiff);
+  const zhStatus = getStatus(zhSum, zhDiff);
+
+  // Update NY row
+  setTzRow('ny', nyH, nyM, nySum, nyDiff, nyStatus);
+  setTzRow('zh', zhH, zhM, zhSum, zhDiff, zhStatus);
+
+  // Calculation method displays
+  document.getElementById('ny-add').innerHTML = numBadges(nySum);
+  document.getElementById('zh-add').innerHTML = numBadges(zhSum);
+  document.getElementById('ny-sub').innerHTML = numBadges(nyDiff);
+  document.getElementById('zh-sub').innerHTML = numBadges(zhDiff);
+
+  // Algo path highlights
+  const activeVals = [nySum, nyDiff, zhSum, zhDiff];
+  document.querySelectorAll('.path-node').forEach(el => {
+    const v = parseInt(el.dataset.v);
+    const opp = OPPOSITES[v];
+    const hit = activeVals.some(av => av===v || av===opp);
+    if (!el.classList.contains('term')) {
+      el.classList.toggle('active', hit);
+    } else {
+      el.classList.toggle('active', hit);
+    }
+  });
+
+  // Signals
+  const sig29   = activeVals.some(v => v===29);
+  const sig35   = activeVals.some(v => v===35);
+  const sig71   = activeVals.some(v => v===71);
+  const sig77   = activeVals.some(v => v===77);
+  const sigDbl  = activeVals.some(v=>isGB(v)) && activeVals.some(v=>isCE(v));
+
+  setSignal('sig-29', sig29, false);
+  setSignal('sig-35', sig35, true);
+  setSignal('sig-71', sig71, false);
+  setSignal('sig-77', sig77, true);
+  setSignal('sig-double', sigDbl, false);
+
+  // Confluence meter
+  const nyHasT = [nySum,nyDiff].some(v=>isTerm(v));
+  const zhHasT = [zhSum,zhDiff].some(v=>isTerm(v));
+  let score = 0, label = 'No significant confluence', hot = false;
+  if (nyHasT && zhHasT) { score=100; label='DOUBLE ALGO TERMINATION — EXTREME CONFLUENCE'; hot=true; }
+  else if (nyHasT||zhHasT) { score=80; label='ALGO TERMINATION DETECTED'; hot=true; }
+  else if (nyStatus.type==='dual'||zhStatus.type==='dual') { score=70; label='GB/CE DUAL HIT — HIGH PROBABILITY'; }
+  else if (nyStatus.type!=='none'&&zhStatus.type!=='none') { score=50; label='MULTI-ZONE CONFLUENCE'; }
+  else if (nyStatus.type!=='none'||zhStatus.type!=='none') { score=30; label='SINGLE ZONE ACTIVITY'; }
+  document.getElementById('meter-fill').style.width = score + '%';
+  const ml = document.getElementById('meter-label');
+  ml.textContent = label;
+  ml.className = 'meter-label' + (hot ? ' hot' : '');
+
+  // Alerts
+  fireAlerts(nyStatus, zhStatus);
+}
+
+function setTzRow(id, h, m, sum, diff, status) {
+  const row    = document.getElementById(id+'-row');
+  const gbEl   = document.getElementById(id+'-gb');
+  const ceEl   = document.getElementById(id+'-ce');
+  const stEl   = document.getElementById(id+'-status');
+
+  const gbHit  = isGB(sum)||isGB(diff);
+  const ceHit  = isCE(sum)||isCE(diff);
+  const isTerm = status.type==='term';
+
+  gbEl.textContent  = gbHit ? '✔' : '✗';
+  gbEl.className    = 'tz-col-val ' + (gbHit ? (isTerm?'val-term':'val-ok') : 'val-no');
+  ceEl.textContent  = ceHit ? '✔' : '✗';
+  ceEl.className    = 'tz-col-val ' + (ceHit ? (isTerm?'val-term':'val-ok') : 'val-no');
+
+  stEl.textContent  = status.text;
+  stEl.className    = 'status-chip ' +
+    (status.type==='term' ? 'chip-term' :
+     status.type==='dual' ? 'chip-dual' :
+     status.type==='gb'   ? 'chip-gb'   :
+     status.type==='ce'   ? 'chip-ce'   : 'chip-none');
+
+  row.className = 'tz-row ' +
+    (status.type==='term' ? 'hit-term' :
+     status.type==='ce'||status.type==='dual' ? 'hit-ce' :
+     status.type==='gb'   ? 'hit-gb' : '');
+}
+
+function setSignal(id, active, isTerm) {
+  const el = document.getElementById(id);
+  el.className = 'signal-item' + (active ? (isTerm ? ' term-active' : ' active') : '');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UPCOMING TERMINATIONS (next 60 min)
+// ═══════════════════════════════════════════════════════════════
+function buildUpcoming() {
+  const now = new Date();
+  const items = [];
+
+  for (let i=1; i<=60; i++) {
+    const f   = new Date(now.getTime() + i*60000);
+    const nyT = new Date(f.toLocaleString('en-US',{timeZone:'America/New_York'}));
+    const zhT = new Date(f.toLocaleString('en-US',{timeZone:'Europe/Zurich'}));
+    const nyH=nyT.getHours(), nyM=nyT.getMinutes();
+    const zhH=zhT.getHours(), zhM=zhT.getMinutes();
+    const nySum=nyH+nyM, nyDiff=Math.abs(nyM-nyH);
+    const zhSum=zhH+zhM, zhDiff=Math.abs(zhM-zhH);
+    const all=[nySum,nyDiff,zhSum,zhDiff];
+
+    const hasTerm = all.some(v=>isTerm(v));
+    const hasGB   = all.some(v=>isGB(v));
+    const hasCE   = all.some(v=>isCE(v));
+    if (!hasTerm && !(hasGB&&hasCE)) continue;
+
+    let type='', desc='';
+    if (all.includes(29))      { type='upc-term';     desc='ALGO 1 END (29)'; }
+    else if (all.includes(71)) { type='upc-term';     desc='ALGO 2 END (71)'; }
+    else if (all.includes(35)) { type='upc-term';     desc='CE TERMINATION (35)'; }
+    else if (all.includes(77)) { type='upc-term';     desc='CE TERMINATION (77)'; }
+    else if (hasGB&&hasCE)     { type='upc-critical'; desc='GB/CE Confluence'; }
+
+    items.push({ min:i, nyH, nyM, nySum, nyDiff, zhSum, zhDiff, type, desc });
+  }
+
+  const list = document.getElementById('upcoming-list');
+  list.innerHTML = '';
+  if (!items.length) {
+    list.innerHTML = '<div class="upc-item" style="color:var(--muted);">No terminations in next 60 min</div>';
+    return;
+  }
+  items.slice(0,6).forEach(it => {
+    const fire = it.type==='upc-term' ? ' <span class="upc-fire">&#9733;&#9733;&#9733;</span>' : '';
+    const div = document.createElement('div');
+    div.className = 'upc-item ' + it.type;
+    div.innerHTML =
+      `<span class="upc-time">In ${it.min} min &nbsp;·&nbsp; ${pad2(it.nyH)}:${pad2(it.nyM)} NY</span><br>` +
+      `<span class="upc-desc">${it.desc}</span>${fire}<br>` +
+      `<span class="upc-nums">NY: ${it.nySum}/${it.nyDiff} &nbsp;|&nbsp; ZH: ${it.zhSum}/${it.zhDiff}</span>`;
+    list.appendChild(div);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+update();
+buildUpcoming();
+setInterval(update, 1000);
+setInterval(buildUpcoming, 30000);
+</script>
+</body>
+</html>
