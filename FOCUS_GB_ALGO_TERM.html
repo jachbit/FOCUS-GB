@@ -8,16 +8,16 @@
   :root {
     --navy:    #002b5c;
     --orange:  #e65c00;
-    --blue:    #3b82f6;
-    --green:   #22c55e;
-    --red:     #ef4444;
-    --yellow:  #fbbf24;
-    --bg:      #0a0f1a;
-    --card:    #0f172a;
-    --border:  #1e3a5f;
-    --muted:   #64748b;
-    --text:    #e2e8f0;
-    --dim:     #94a3b8;
+    --blue:    #60a5fa;
+    --green:   #4ade80;
+    --red:     #f87171;
+    --yellow:  #fde047;
+    --bg:      #06091a;
+    --card:    #0d1526;
+    --border:  #2a4a7f;
+    --muted:   #94a3b8;
+    --text:    #f1f5f9;
+    --dim:     #cbd5e1;
   }
   * { margin:0; padding:0; box-sizing:border-box; }
   html, body { height:100%; }
@@ -136,11 +136,11 @@
     0%,100% { box-shadow: 0 0 20px rgba(239,68,68,0.5); }
     50%      { box-shadow: 0 0 35px rgba(239,68,68,0.8); }
   }
-  .tz-name  { font-size: 0.72rem; color: var(--muted); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+  .tz-name  { font-size: 0.72rem; color: var(--dim); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
   .tz-time  { font-size: 1.4rem; font-weight: 700; font-variant-numeric: tabular-nums; color: #fff; }
   .tz-badges { display: flex; gap: 10px; align-items: center; }
   .tz-col   { text-align: center; min-width: 44px; }
-  .tz-col-label { font-size: 0.65rem; color: var(--muted); margin-bottom: 3px; }
+  .tz-col-label { font-size: 0.68rem; color: var(--dim); margin-bottom: 3px; font-weight: 600; }
   .tz-col-val { font-size: 1rem; font-weight: 700; }
   .val-ok   { color: var(--green); }
   .val-no   { color: var(--muted); }
@@ -166,16 +166,16 @@
   }
   .method-box {
     flex: 1;
-    background: rgba(0,43,92,0.4);
+    background: rgba(0,43,92,0.6);
     border: 1px solid var(--border);
     border-radius: 6px;
     padding: 10px;
   }
-  .method-title { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .method-title { font-size: 0.68rem; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; font-weight: 600; }
   .method-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-  .method-item  { display: flex; align-items: center; justify-content: space-between; padding: 4px 6px; background: rgba(0,0,0,0.3); border-radius: 4px; }
-  .method-lbl   { font-size: 0.7rem; color: var(--muted); }
-  .method-val   { font-size: 0.95rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 4px; }
+  .method-item  { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; background: rgba(0,0,0,0.4); border-radius: 4px; border: 1px solid var(--border); }
+  .method-lbl   { font-size: 0.75rem; color: var(--dim); font-weight: 600; }
+  .method-val   { font-size: 1.05rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 4px; }
   .badge {
     padding: 1px 5px;
     border-radius: 3px;
@@ -194,14 +194,16 @@
     border-radius: 6px;
     padding: 10px 12px;
   }
-  .path-label { font-size: 0.68rem; color: var(--blue); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+  .path-label { font-size: 0.72rem; color: var(--blue); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
   .path-nodes { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
   .path-node  {
-    padding: 3px 8px;
-    background: rgba(0,43,92,0.6);
+    padding: 4px 10px;
+    background: rgba(0,43,92,0.7);
     border: 1px solid var(--border);
     border-radius: 4px;
-    font-size: 0.78rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--dim);
     font-variant-numeric: tabular-nums;
     transition: all 0.3s;
   }
@@ -237,19 +239,19 @@
     border-radius: 8px;
     transition: width 0.4s ease;
   }
-  .meter-label { font-size: 0.8rem; color: var(--dim); font-weight: 600; }
+  .meter-label { font-size: 0.82rem; color: #fff; font-weight: 600; }
   .meter-label.hot { color: var(--red); font-weight: 700; }
 
   /* ── SIGNALS ── */
   .signal-list { display: flex; flex-direction: column; gap: 6px; }
   .signal-item {
     padding: 9px 12px;
-    background: rgba(0,43,92,0.3);
+    background: rgba(0,43,92,0.5);
     border: 1px solid var(--border);
     border-radius: 6px;
     font-size: 0.8rem;
     font-weight: 600;
-    color: var(--muted);
+    color: var(--dim);
     text-align: center;
     transition: all 0.3s;
     letter-spacing: 1px;
@@ -275,7 +277,7 @@
   /* ── REFERENCE NUMBERS ── */
   .ref-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
   .ref-group  { }
-  .ref-title  { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .ref-title  { font-size: 0.7rem; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; font-weight: 700; }
   .ref-nums   { display: flex; flex-wrap: wrap; gap: 4px; }
   .ref-num    { padding: 2px 7px; border-radius: 3px; font-size: 0.75rem; font-weight: 600; }
   .ref-num.gb { background: rgba(59,130,246,0.2); border: 1px solid var(--blue);   color: var(--blue); }
@@ -306,7 +308,7 @@
   .upc-item.upc-term     { border-left-color: var(--red);    background: rgba(239,68,68,0.1); }
   .upc-time  { font-weight: 700; color: #fff; }
   .upc-desc  { color: var(--orange); font-weight: 600; }
-  .upc-nums  { color: var(--muted); font-size: 0.72rem; }
+  .upc-nums  { color: var(--dim); font-size: 0.72rem; }
   .upc-fire  { color: var(--red); }
 
   /* ── ALERTS ── */
