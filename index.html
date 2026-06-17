@@ -569,6 +569,11 @@
         <span style="font-size:0.75rem;color:var(--muted);">2-min warn + fire beep</span>
         <button onclick="testBeep()" style="background:none;border:1px solid var(--border);color:var(--muted);font-size:0.72rem;padding:3px 10px;border-radius:4px;cursor:pointer;">TEST</button>
       </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:8px;">
+        <button id="btn-custom-sound" onclick="pickCustomSound()" style="flex:1;background:none;border:1px solid var(--border);color:var(--muted);font-size:0.72rem;padding:3px 8px;border-radius:4px;cursor:pointer;">🎵 Custom Sound</button>
+        <button id="btn-clear-sound" onclick="clearCustomSound()" style="display:none;background:none;border:1px solid #f87171;color:#f87171;font-size:0.72rem;padding:3px 8px;border-radius:4px;cursor:pointer;">✕</button>
+      </div>
+      <input type="file" id="sound-file-input" accept=".mp3,.wav,.ogg" style="display:none" onchange="loadCustomSound(this)">
     </div>
 
   </div>
@@ -1000,8 +1005,8 @@
     // Node alerts
     if (alertsOn) {
       if (nxtActual !== lastAlertNode) { alerted2min = false; alertedFire = false; lastAlertNode = nxtActual; }
-      if (secsLeft <= 120 && secsLeft > 30 && !alerted2min) { beepWarn(); alerted2min = true; }
-      if (secsLeft <= 5   && !alertedFire)                  { beepFire(); alertedFire = true; }
+      if (secsLeft <= 120 && secsLeft > 30 && !alerted2min) { playWarnAlarm(); alerted2min = true; }
+      if (secsLeft <= 5   && !alertedFire)                  { playNodeAlarm(); alertedFire = true; }
     }
 
     // Path node highlighting (highlight nodes whose minute matches current)
@@ -1034,6 +1039,8 @@
   let alertedFire   = false;
   let lastAlertNode = -1;
   let audioCtx      = null;
+  let customSoundB64 = localStorage.getItem('gb_custom_sound') || null;
+  let customAudio    = null;
 
   function getAudioCtx() {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1062,7 +1069,57 @@
     setTimeout(() => beep(1100, 0.22, 0.5, 'sine'), 220);
     setTimeout(() => beep(1320, 0.28, 0.5, 'sine'), 460);
   }
-  function testBeep() { beepWarn(); setTimeout(beepFire, 600); }
+  function playNodeAlarm() {
+    if (customSoundB64) {
+      try {
+        if (customAudio) { customAudio.pause(); customAudio.currentTime = 0; }
+        customAudio = new Audio(customSoundB64);
+        customAudio.volume = 0.85;
+        customAudio.play();
+        setTimeout(() => { if (customAudio) { customAudio.pause(); customAudio.currentTime = 0; } }, 5000);
+        return;
+      } catch(e) {}
+    }
+    beepFire();
+  }
+  function playWarnAlarm() {
+    if (customSoundB64) { playNodeAlarm(); return; }
+    beepWarn();
+  }
+  function testBeep() {
+    if (customSoundB64) { playNodeAlarm(); return; }
+    beepWarn(); setTimeout(beepFire, 600);
+  }
+  function pickCustomSound() {
+    document.getElementById('sound-file-input').click();
+  }
+  function loadCustomSound(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      customSoundB64 = e.target.result;
+      localStorage.setItem('gb_custom_sound', customSoundB64);
+      const btn = document.getElementById('btn-custom-sound');
+      btn.textContent = '🎵 ' + file.name.slice(0, 12);
+      btn.style.borderColor = 'var(--green)';
+      btn.style.color = 'var(--green)';
+      document.getElementById('btn-clear-sound').style.display = 'inline-block';
+      playNodeAlarm();
+    };
+    reader.readAsDataURL(file);
+    input.value = '';
+  }
+  function clearCustomSound() {
+    customSoundB64 = null;
+    if (customAudio) { customAudio.pause(); customAudio = null; }
+    localStorage.removeItem('gb_custom_sound');
+    const btn = document.getElementById('btn-custom-sound');
+    btn.textContent = '🎵 Custom Sound';
+    btn.style.borderColor = 'var(--border)';
+    btn.style.color = 'var(--muted)';
+    document.getElementById('btn-clear-sound').style.display = 'none';
+  }
   function toggleAlerts() {
     alertsOn = !alertsOn;
     const knob = document.getElementById('toggle-knob');
@@ -1074,6 +1131,12 @@
   }
 
   // ── INIT ──────────────────────────────────────────────────────────────────
+  if (customSoundB64) {
+    const btn = document.getElementById('btn-custom-sound');
+    if (btn) { btn.textContent = '🎵 Custom'; btn.style.borderColor = 'var(--green)'; btn.style.color = 'var(--green)'; }
+    const xBtn = document.getElementById('btn-clear-sound');
+    if (xBtn) xBtn.style.display = 'inline-block';
+  }
   buildNodeGrid();
   buildPaths();
   buildCEGrid();
